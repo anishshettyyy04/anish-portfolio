@@ -1076,6 +1076,17 @@
           '<div><div class="label-text">Contact form</div><div class="label-sub">Turn the public contact form on or off</div></div>' +
           '<label class="switch"><input type="checkbox" id="s_contact"' + (data.contact_form_enabled ? ' checked' : '') + '><span class="slider"></span></label>' +
         '</div>' +
+
+        '<div class="toggle-row">' +
+          '<div><div class="label-text">Site announcement</div><div class="label-sub">Shows a dismissible message in the bottom-left corner of the public site</div></div>' +
+          '<label class="switch"><input type="checkbox" id="s_announce"' + (data.announcement_enabled ? ' checked' : '') + '><span class="slider"></span></label>' +
+        '</div>' +
+        '<div class="field"><label>Announcement message</label><textarea id="s_announceMsg" placeholder="e.g. Now open for freelance video editing work">' + escapeHtml(data.announcement_message) + '</textarea></div>' +
+        '<div class="form-grid two-col" style="margin-bottom:20px;">' +
+          '<div class="field"><label>Button label (optional)</label><input type="text" id="s_announceLabel" value="' + escapeAttr(data.announcement_link_label) + '" placeholder="e.g. Check this out"></div>' +
+          '<div class="field"><label>Button URL (optional)</label><input type="text" id="s_announceUrl" value="' + escapeAttr(data.announcement_link_url) + '"></div>' +
+        '</div>' +
+
         '<div class="field"><label>Hero eyebrow text (small line above your name)</label><input type="text" id="s_eyebrow" value="' + escapeAttr(data.hero_eyebrow) + '"></div>' +
         '<div class="field"><label>Hero tagline</label><textarea id="s_tagline">' + escapeHtml(data.hero_tagline) + '</textarea></div>' +
         '<div class="field"><label>About / summary text</label><textarea id="s_summary" style="min-height:120px;">' + escapeHtml(data.summary_text) + '</textarea></div>' +
@@ -1120,6 +1131,10 @@
       document.getElementById('s_save').addEventListener('click', async function(){
         const payload = {
           contact_form_enabled: document.getElementById('s_contact').checked,
+          announcement_enabled: document.getElementById('s_announce').checked,
+          announcement_message: document.getElementById('s_announceMsg').value.trim(),
+          announcement_link_label: document.getElementById('s_announceLabel').value.trim(),
+          announcement_link_url: document.getElementById('s_announceUrl').value.trim(),
           hero_eyebrow: document.getElementById('s_eyebrow').value.trim(),
           hero_tagline: document.getElementById('s_tagline').value.trim(),
           summary_text: document.getElementById('s_summary').value.trim()
