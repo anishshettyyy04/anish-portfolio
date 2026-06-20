@@ -199,6 +199,42 @@
   .upload-progress-bar{height:100%;background:var(--accent);width:0%;transition:width 0.2s;}
   .file-preview{font-size:12px;color:var(--accent-2);margin-top:8px;word-break:break-all;}
 
+  .page-manager{
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:12px;
+    margin-top:10px;
+  }
+  .page-manager-empty{font-size:12.5px;color:var(--text-muted);}
+  .page-thumb{
+    border:1px solid var(--line);border-radius:8px;overflow:hidden;
+    background:var(--surface-2);position:relative;
+  }
+  .page-thumb img{width:100%;aspect-ratio:3/4;object-fit:cover;display:block;}
+  .page-thumb .page-num{
+    position:absolute;top:6px;left:6px;
+    background:rgba(10,10,13,0.75);color:var(--text);
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;
+    padding:2px 7px;border-radius:6px;
+  }
+  .page-thumb .page-remove{
+    position:absolute;top:6px;right:6px;
+    width:22px;height:22px;border-radius:50%;
+    background:rgba(10,10,13,0.75);color:var(--text);
+    display:flex;align-items:center;justify-content:center;
+    font-size:12px;cursor:pointer;
+  }
+  .page-thumb .page-remove:hover{background:var(--danger);}
+  .page-thumb .page-move-row{
+    display:flex;justify-content:space-between;
+    padding:5px 6px;background:var(--surface);
+  }
+  .page-thumb .page-move-btn{
+    flex:1;text-align:center;font-size:12px;color:var(--text-muted);cursor:pointer;
+    padding:3px 0;border-radius:5px;
+  }
+  .page-thumb .page-move-btn:hover{background:var(--surface-2);color:var(--accent-2);}
+  .page-thumb .page-move-btn.disabled{opacity:0.3;cursor:default;}
+  .page-thumb .page-move-btn.disabled:hover{background:transparent;color:var(--text-muted);}
+
   /* ===== TOGGLE SWITCH ===== */
   .toggle-row{
     display:flex;align-items:center;justify-content:space-between;
@@ -1331,8 +1367,10 @@
                 '<div class="drop-zone" id="dz_pages">Click or drag a PDF, or multiple images, here' +
                 '<input type="file" id="f_pagefiles" accept="image/*,application/pdf" multiple>' +
                 '<div class="upload-progress" id="p_pages"><div class="upload-progress-bar"></div></div>' +
-                '<div class="file-preview" id="pagesPreview">' + pendingPageUrls.length + ' page(s) uploaded</div>' +
                 '</div>' +
+              '</div>' +
+              '<div class="field"><label>Pages (in order — use the arrows to rearrange, ✕ to remove one)</label>' +
+                '<div class="page-manager" id="pageManager"></div>' +
               '</div>' +
             '</div>' +
 
@@ -1371,8 +1409,51 @@
       // multi-page upload
       setupMultiUpload('dz_pages', 'f_pagefiles', 'p_pages', function(urls){
         pendingPageUrls = pendingPageUrls.concat(urls);
-        document.getElementById('pagesPreview').textContent = pendingPageUrls.length + ' page(s) uploaded';
+        renderPageManager();
       });
+      renderPageManager(); // show any pages this item already has, on first render
+
+      function renderPageManager(){
+        const wrap = document.getElementById('pageManager');
+        if (pendingPageUrls.length === 0){
+          wrap.innerHTML = '<div class="page-manager-empty">No pages yet — upload a PDF or images above.</div>';
+          return;
+        }
+        wrap.innerHTML = pendingPageUrls.map(function(url, i){
+          return '<div class="page-thumb" data-idx="' + i + '">' +
+            '<img src="' + url + '" alt="page ' + (i+1) + '" loading="lazy">' +
+            '<div class="page-num">' + (i+1) + '</div>' +
+            '<div class="page-remove" data-remove="' + i + '" title="Remove this page">✕</div>' +
+            '<div class="page-move-row">' +
+              '<div class="page-move-btn' + (i === 0 ? ' disabled' : '') + '" data-moveleft="' + i + '">‹</div>' +
+              '<div class="page-move-btn' + (i === pendingPageUrls.length - 1 ? ' disabled' : '') + '" data-moveright="' + i + '">›</div>' +
+            '</div>' +
+          '</div>';
+        }).join('');
+
+        wrap.querySelectorAll('[data-remove]').forEach(function(el){
+          el.addEventListener('click', function(){
+            pendingPageUrls.splice(parseInt(el.getAttribute('data-remove')), 1);
+            renderPageManager();
+          });
+        });
+        wrap.querySelectorAll('[data-moveleft]').forEach(function(el){
+          el.addEventListener('click', function(){
+            const i = parseInt(el.getAttribute('data-moveleft'));
+            if (i === 0) return;
+            [pendingPageUrls[i-1], pendingPageUrls[i]] = [pendingPageUrls[i], pendingPageUrls[i-1]];
+            renderPageManager();
+          });
+        });
+        wrap.querySelectorAll('[data-moveright]').forEach(function(el){
+          el.addEventListener('click', function(){
+            const i = parseInt(el.getAttribute('data-moveright'));
+            if (i === pendingPageUrls.length - 1) return;
+            [pendingPageUrls[i], pendingPageUrls[i+1]] = [pendingPageUrls[i+1], pendingPageUrls[i]];
+            renderPageManager();
+          });
+        });
+      }
 
       document.getElementById('f_cancel').addEventListener('click', function(){ slotEl.innerHTML = ''; });
       document.getElementById('f_save').addEventListener('click', async function(){
