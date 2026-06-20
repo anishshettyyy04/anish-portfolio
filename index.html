@@ -819,52 +819,84 @@
       });
     }
 
+    let isOpening = false;
+
     async function openFlipbook(pageUrls, title, description){
-      currentPageUrls = pageUrls;
-      document.getElementById('flipTitleMain').textContent = title || '';
-      const descEl = document.getElementById('flipTitleDesc');
-      descEl.textContent = description || '';
-      descEl.style.display = description ? 'block' : 'none';
-      container.innerHTML = ''; // clear any previous instance's DOM
-      zoomLevel = 1;
-      container.style.transform = 'scale(1)';
-      gridPanel.classList.remove('open');
+      // guards against rapid double-clicks opening two instances on the
+      // same container at once, which is what was causing "won't reopen
+      // until refresh" — a half-destroyed previous instance left the
+      // container in a broken state for the next one.
+      if (isOpening) return;
+      isOpening = true;
 
-      const natural = await getImageNaturalSize(pageUrls[0]);
-      const ratio = natural.w / natural.h;
+      try {
+        destroyExistingInstance();
 
-      // Fit a SINGLE page within the available stage space, respecting its
-      // real aspect ratio. width/height passed to StPageFlip describe one
-      // page's size — the library handles the cover (single page) and the
-      // spreads (two pages side-by-side) on its own from there.
-      // On narrow screens the library collapses to single-page view anyway,
-      // so we can afford a much larger share of the viewport width there.
-      const widthRatio = window.innerWidth <= 640 ? 0.85 : 0.42;
-      const toolbarReserve = window.innerWidth <= 640 ? 150 : 170;
-      const availW = Math.min(window.innerWidth * widthRatio, 480);
-      const availH = window.innerHeight - toolbarReserve;
-      let pageW = availW, pageH = pageW / ratio;
-      if (pageH > availH){ pageH = availH; pageW = pageH * ratio; }
+        document.getElementById('flipTitleMain').textContent = title || '';
+        const descEl = document.getElementById('flipTitleDesc');
+        descEl.textContent = description || '';
+        descEl.style.display = description ? 'block' : 'none';
+        zoomLevel = 1;
+        container.style.transform = 'scale(1)';
+        gridPanel.classList.remove('open');
+        currentPageUrls = pageUrls;
 
-      pageFlipInstance = new St.PageFlip(container, {
-        width: Math.round(pageW),
-        height: Math.round(pageH),
-        size: 'fixed',
-        maxShadowOpacity: 0.5,
-        showCover: true,        // first page opens alone, like a real front cover
-        usePortrait: false,     // keep two-page spreads on desktop; the library
-                                 // still auto-switches to single-page on narrow
-                                 // screens on its own
-        mobileScrollSupport: false
-      });
+        const natural = await getImageNaturalSize(pageUrls[0]);
+        const ratio = natural.w / natural.h;
 
-      pageFlipInstance.loadFromImages(pageUrls);
-      pageFlipInstance.on('flip', function(e){ updateIndicator(e.data); });
+        // Fit a SINGLE page within the available stage space, respecting its
+        // real aspect ratio. width/height passed to StPageFlip describe one
+        // page's size — the library handles the cover (single page) and the
+        // spreads (two pages side-by-side) on its own from there.
+        // On narrow screens the library collapses to single-page view anyway,
+        // so we can afford a much larger share of the viewport width there.
+        const widthRatio = window.innerWidth <= 640 ? 0.85 : 0.42;
+        const toolbarReserve = window.innerWidth <= 640 ? 150 : 170;
+        const availW = Math.min(window.innerWidth * widthRatio, 480);
+        const availH = window.innerHeight - toolbarReserve;
+        let pageW = availW, pageH = pageW / ratio;
+        if (pageH > availH){ pageH = availH; pageW = pageH * ratio; }
 
-      updateIndicator(0);
-      renderGridThumbs(pageUrls);
-      overlay.classList.add('open');
-      document.body.style.overflow = 'hidden';
+        pageFlipInstance = new St.PageFlip(container, {
+          width: Math.round(pageW),
+          height: Math.round(pageH),
+          size: 'fixed',
+          maxShadowOpacity: 0.5,
+          showCover: true,        // first page opens alone, like a real front cover
+          usePortrait: false,     // keep two-page spreads on desktop; the library
+                                   // still auto-switches to single-page on narrow
+                                   // screens on its own
+          mobileScrollSupport: false
+        });
+
+        pageFlipInstance.loadFromImages(pageUrls);
+        pageFlipInstance.on('flip', function(e){ updateIndicator(e.data); });
+
+        updateIndicator(0);
+        renderGridThumbs(pageUrls);
+        overlay.classList.add('open');
+        document.body.style.overflow = 'hidden';
+      } catch (err){
+        console.warn('Flipbook failed to open —', err);
+        // if construction itself failed, make sure we don't leave a half
+        // -built instance hanging around for next time
+        pageFlipInstance = null;
+        container.innerHTML = '';
+      } finally {
+        isOpening = false;
+      }
+    }
+
+    function destroyExistingInstance(){
+      if (pageFlipInstance){
+        try { pageFlipInstance.destroy(); }
+        catch (err){ console.warn('Flipbook destroy() threw, continuing anyway —', err); }
+        pageFlipInstance = null;
+      }
+      // belt-and-suspenders: StPageFlip's destroy() doesn't always fully
+      // clear its own DOM/canvas nodes, so wipe the container directly too
+      // rather than trust destroy() alone before building a fresh instance.
+      container.innerHTML = '';
     }
 
     function updateIndicator(current){
@@ -892,8 +924,7 @@
       document.body.style.overflow = '';
       gridPanel.classList.remove('open');
       if (document.fullscreenElement) document.exitFullscreen().catch(function(){});
-      if (pageFlipInstance){ pageFlipInstance.destroy(); pageFlipInstance = null; }
-      container.innerHTML = '';
+      destroyExistingInstance();
     }
 
     function setZoom(delta){
