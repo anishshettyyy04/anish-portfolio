@@ -1,0 +1,1413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anish Shetty S — Engineer, Editor, Designer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.js"></script>
+<style>
+  :root{
+    --bg:#0A0A0D;
+    --surface:#13131A;
+    --surface-2:#1A1A23;
+    --line:#26262F;
+    --text:#F2F0EB;
+    --text-muted:#8B8B96;
+    --accent:#FF6B1A;
+    --accent-2:#FFB454;
+  }
+  *{margin:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+
+  /* ===== CUSTOM SCROLLBAR — dark/themed instead of the default white one ===== */
+  ::-webkit-scrollbar{width:10px;height:10px;}
+  ::-webkit-scrollbar-track{background:var(--surface);}
+  ::-webkit-scrollbar-thumb{background:var(--line);border-radius:6px;border:2px solid var(--surface);}
+  ::-webkit-scrollbar-thumb:hover{background:var(--accent);}
+  *{scrollbar-width:thin;scrollbar-color:var(--line) var(--surface);}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+  }
+  .mono{font-family:'JetBrains Mono',monospace;}
+  .display{font-family:'Space Grotesk',sans-serif;}
+  a{color:inherit;text-decoration:none;}
+  button{font-family:inherit;background:none;border:none;color:inherit;cursor:pointer;}
+
+  /* ===== NAV (auto-hide on scroll) ===== */
+  nav{
+    position:fixed;top:0;left:0;right:0;z-index:50;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:20px 48px;
+    background:rgba(10,10,13,0.85);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+    transition:transform 0.35s ease;
+  }
+  nav.nav-hidden{transform:translateY(-100%);}
+  .logo{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:18px;}
+  .logo span{color:var(--accent);}
+  .nav-links{display:flex;gap:36px;font-size:14px;color:var(--text-muted);}
+  .nav-links a:hover{color:var(--text);}
+  .nav-cta{display:flex;gap:12px;}
+
+  .hamburger-btn{
+    display:none;
+    width:38px;height:38px;border-radius:9px;
+    background:transparent;border:1px solid var(--line);
+    flex-direction:column;align-items:center;justify-content:center;gap:5px;
+    cursor:pointer;flex-shrink:0;
+  }
+  .hamburger-btn:hover{border-color:var(--accent);}
+  .hamburger-btn span{width:18px;height:1.5px;background:var(--text);transition:transform .25s,opacity .25s;}
+  .hamburger-btn.open span:nth-child(1){transform:translateY(6.5px) rotate(45deg);}
+  .hamburger-btn.open span:nth-child(2){opacity:0;}
+  .hamburger-btn.open span:nth-child(3){transform:translateY(-6.5px) rotate(-45deg);}
+
+  .mobile-menu{
+    position:fixed;top:0;left:0;right:0;z-index:49;
+    background:var(--surface);border-bottom:1px solid var(--line);
+    display:flex;flex-direction:column;
+    padding:90px 28px 28px;gap:4px;
+    transform:translateY(-100%);transition:transform .3s ease;
+  }
+  .mobile-menu.open{transform:translateY(0);}
+  .mobile-menu a{
+    font-size:16px;padding:14px 8px;border-radius:8px;color:var(--text);
+    border-bottom:1px solid var(--line);
+  }
+  .mobile-menu a:hover{background:var(--surface-2);color:var(--accent-2);}
+  .mobile-menu a:last-child{border-bottom:none;margin-top:8px;color:var(--accent-2);}
+
+  body{padding-top:0;}
+  main{padding-top:81px;} /* offset for fixed nav height */
+
+  .btn{
+    font-family:'Inter',sans-serif;
+    font-size:13.5px;font-weight:500;
+    padding:11px 22px;
+    border-radius:999px;
+    cursor:pointer;
+    border:1px solid transparent;
+    display:inline-block;
+  }
+  .btn-primary{background:var(--accent);color:#0A0A0D;}
+  .btn-primary:hover{background:var(--accent-2);}
+  .btn-secondary{background:transparent;border:1px solid var(--line);color:var(--text);}
+  .btn-secondary:hover{border-color:var(--text-muted);}
+
+  /* ===== SECTION SHELL ===== */
+  .section{max-width:1080px;margin:0 auto;padding:100px 48px;}
+  .section.bordered{border-top:1px solid var(--line);}
+  .label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;letter-spacing:0.12em;text-transform:uppercase;
+    color:var(--accent);
+    display:flex;align-items:center;gap:10px;margin-bottom:18px;
+  }
+  .label::before{content:'';width:6px;height:6px;background:var(--accent);border-radius:50%;display:inline-block;}
+  h2.display{font-size:36px;font-weight:700;line-height:1.1;letter-spacing:-0.01em;margin-bottom:10px;}
+  p.body{font-size:15.5px;line-height:1.75;color:var(--text-muted);max-width:640px;}
+
+  .ruler{display:flex;align-items:center;gap:10px;margin:8px 0 44px;color:var(--text-muted);}
+  .ruler-line{flex:1;height:1px;background:var(--line);}
+  .ruler-count{font-family:'JetBrains Mono',monospace;font-size:12px;white-space:nowrap;}
+
+  /* ===== HERO ===== */
+  .hero{
+    max-width:1080px;margin:0 auto;
+    padding:90px 48px 80px;
+    display:grid;grid-template-columns:1.3fr 0.9fr;gap:64px;align-items:center;
+  }
+  .hero-eyebrow{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--accent-2);letter-spacing:0.04em;margin-bottom:20px;}
+  h1.display{font-size:54px;font-weight:700;line-height:1.08;letter-spacing:-0.01em;}
+  .glow-text{
+    background:linear-gradient(90deg,var(--accent),var(--accent-2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .hero-sub{font-size:16.5px;line-height:1.7;color:var(--text-muted);margin-top:24px;max-width:480px;}
+  .hero-btns{display:flex;gap:14px;margin-top:36px;}
+
+  .hero-media{
+    position:relative;
+    aspect-ratio:4/5;
+    border-radius:16px;
+    overflow:hidden;
+    border:1px solid var(--line);
+    background:linear-gradient(160deg,#1a1a23,#0d0d11);
+  }
+  .hero-media img, .hero-media video{
+    width:100%;height:100%;object-fit:cover;display:block;
+    position:absolute;top:0;left:0;
+  }
+  .hero-media img{opacity:0;transition:opacity 0.6s ease;}
+  .hero-media img.visible{opacity:1;}
+  .hero-media video.hidden{opacity:0;}
+
+  /* ===== SUMMARY ===== */
+  .summary-box{
+    background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    padding:36px 40px;
+  }
+
+  /* ===== SKILLS ===== */
+  .skill-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+  .skill-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:28px 26px;}
+  .skill-card .tag{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent);letter-spacing:0.08em;text-transform:uppercase;}
+  .skill-card h3{font-family:'Space Grotesk',sans-serif;font-weight:500;font-size:19px;margin:10px 0 16px;}
+  .chip-list{display:flex;flex-wrap:wrap;gap:8px;}
+  .chip{
+    font-size:12.5px;padding:6px 12px;border-radius:8px;
+    background:var(--surface-2);color:var(--text-muted);border:1px solid var(--line);
+  }
+
+  /* ===== PROJECT CARDS (code — no video, github link) ===== */
+  .card-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+  .project-card{
+    background:var(--surface);border:1px solid var(--line);border-radius:12px;
+    overflow:hidden;transition:border-color .25s, transform .25s;
+    display:flex;flex-direction:column;
+  }
+  .project-card:hover{border-color:var(--accent);transform:translateY(-3px);}
+  .project-thumb{
+    height:150px;
+    background:linear-gradient(135deg,#1d1d26,#0e0e13);
+    overflow:hidden;
+  }
+  .project-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+  .project-body{padding:18px 20px 20px;flex:1;display:flex;flex-direction:column;}
+  .project-tag{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.08em;color:var(--accent-2);text-transform:uppercase;}
+  .project-title{font-family:'Space Grotesk',sans-serif;font-weight:500;font-size:16px;margin-top:8px;}
+  .project-sub{font-size:12.5px;color:var(--text-muted);margin-top:4px;flex:1;}
+  .project-footer{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-top:14px;padding-top:14px;border-top:1px solid var(--line);
+    font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-muted);
+  }
+  .gh-btn{
+    display:flex;align-items:center;gap:6px;
+    padding:6px 12px;border-radius:999px;
+    border:1px solid var(--line);
+    font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text);
+    transition:border-color .2s,color .2s;
+  }
+  .gh-btn:hover{border-color:var(--accent);color:var(--accent-2);}
+  .gh-btn svg{width:13px;height:13px;flex-shrink:0;}
+
+  /* ===== SMART GRID (video/design) ===== */
+  .filter-row{display:flex;gap:8px;margin-bottom:28px;flex-wrap:wrap;}
+  .pill{
+    font-family:'JetBrains Mono',monospace;font-size:11px;padding:7px 14px;border-radius:999px;
+    border:1px solid var(--line);color:var(--text-muted);cursor:pointer;
+    transition:border-color .2s,color .2s;
+  }
+  .pill.active{border-color:var(--accent);color:var(--accent-2);}
+  .pill:hover{color:var(--text);}
+
+  .smart-grid{display:grid;gap:16px;}
+  /* 1 item — single wide feature */
+  .smart-grid[data-count="1"]{grid-template-columns:1fr;}
+  /* 2 items — even split */
+  .smart-grid[data-count="2"]{grid-template-columns:1fr 1fr;}
+  /* 3 items — one featured + two stacked */
+  .smart-grid[data-count="3"]{grid-template-columns:2fr 1fr;grid-template-rows:1fr 1fr;}
+  .smart-grid[data-count="3"] .sg-item:first-child{grid-row:span 2;}
+  /* 4 items — clean 2x2 */
+  .smart-grid[data-count="4"]{grid-template-columns:1fr 1fr;}
+  /* 5+ items — 3-column flow, last row fills evenly via auto-flow */
+  .smart-grid[data-count="5plus"]{grid-template-columns:repeat(3,1fr);}
+
+  .sg-item{
+    border-radius:12px;border:1px solid var(--line);
+    background:linear-gradient(135deg,#1d1d26,#0e0e13);
+    position:relative;overflow:hidden;aspect-ratio:16/10;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;transition:border-color .25s,transform .25s;
+  }
+  .sg-item:hover{border-color:var(--accent);transform:translateY(-3px);}
+  .sg-item:hover .play{border-color:var(--accent);color:var(--accent-2);}
+  .sg-item.portrait{aspect-ratio:9/16;width:260px;max-width:100%;}
+  .sg-item video, .sg-item img{
+    position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  }
+  .sg-item .play{
+    position:relative;z-index:1;
+    width:34px;height:34px;border-radius:50%;border:1px solid var(--text-muted);
+    display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:11px;
+    background:rgba(10,10,13,0.55);
+  }
+  .sg-item .sg-tag{
+    position:absolute;bottom:10px;left:10px;z-index:1;font-family:'JetBrains Mono',monospace;font-size:10.5px;
+    color:var(--accent-2);background:rgba(10,10,13,0.7);padding:4px 9px;border-radius:6px;border:1px solid var(--line);
+  }
+  .reel-row{display:flex;gap:20px;flex-wrap:wrap;}
+  @media (min-width:600px){
+    .sg-item.portrait{width:300px;}
+  }
+
+  /* ===== FLIPBOOK MODAL (StPageFlip — 3D page curl, DearFlip-style chrome) ===== */
+  #flipOverlay{background:rgba(6,6,8,0.92);flex-direction:column;}
+  #flipOverlay .modal-box{display:none;} /* unused here — flipbook builds its own layout */
+
+  .flip-top-bar{
+    position:absolute;top:0;left:0;right:0;z-index:5;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:16px 20px;
+  }
+  .flip-title-label{font-size:12px;color:var(--text-muted);letter-spacing:0.04em;}
+
+  .flip-stage{
+    display:flex;align-items:center;justify-content:center;gap:16px;
+    width:100%;flex:1;padding:70px 16px 90px;
+    min-height:0;
+  }
+  #flipBookContainer{
+    box-shadow:0 30px 80px rgba(0,0,0,0.6);
+    border-radius:3px;
+    flex-shrink:0;
+  }
+  #flipBookContainer .page{ background:#1a1a23; }
+  #flipBookContainer .page img{
+    width:100%;height:100%;object-fit:contain;display:block;
+  }
+  .flip-nav-btn{
+    width:40px;height:40px;border-radius:50%;
+    background:rgba(255,255,255,0.06);border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;
+    color:var(--text);font-size:18px;cursor:pointer;flex-shrink:0;
+    transition:border-color .2s,color .2s,background .2s;
+  }
+  .flip-nav-btn:hover{border-color:var(--accent);color:var(--accent-2);background:rgba(255,255,255,0.1);}
+
+  /* bottom toolbar — page counter + grid/zoom/fullscreen, like the reference */
+  .flip-toolbar{
+    position:absolute;bottom:20px;left:50%;transform:translateX(-50%);z-index:5;
+    display:flex;align-items:center;gap:6px;
+    background:var(--surface);border:1px solid var(--line);border-radius:12px;
+    padding:8px 10px;
+  }
+  .flip-toolbar-count{
+    font-size:12px;color:var(--text-muted);padding:0 10px;border-right:1px solid var(--line);margin-right:4px;
+  }
+  .flip-toolbar-btn{
+    width:32px;height:32px;border-radius:8px;
+    display:flex;align-items:center;justify-content:center;
+    color:var(--text-muted);font-size:15px;cursor:pointer;
+    transition:background .2s,color .2s;
+  }
+  .flip-toolbar-btn:hover{background:var(--surface-2);color:var(--accent-2);}
+  .flip-toolbar-btn.active{color:var(--accent);}
+
+  /* thumbnail grid overlay panel */
+  .flip-grid-panel{
+    position:absolute;inset:70px 16px 90px;z-index:4;
+    background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    padding:20px;overflow-y:auto;
+    display:none;
+  }
+  .flip-grid-panel.open{display:block;}
+  .flip-grid-inner{
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:14px;
+  }
+  .flip-grid-thumb{
+    border:1px solid var(--line);border-radius:8px;overflow:hidden;cursor:pointer;
+    background:#1a1a23;transition:border-color .2s;
+    display:flex;flex-direction:column;
+  }
+  .flip-grid-thumb:hover{border-color:var(--accent);}
+  .flip-grid-thumb img{width:100%;display:block;object-fit:contain;background:#1a1a23;}
+  .flip-grid-thumb .num{font-size:11px;color:var(--text-muted);text-align:center;padding:6px 0;font-family:'JetBrains Mono',monospace;}
+
+  @media (max-width:760px){
+    .flip-stage{padding:60px 6px 80px;gap:6px;}
+    .flip-nav-btn{width:34px;height:34px;font-size:15px;}
+    .flip-toolbar{gap:2px;padding:6px 8px;}
+    .flip-toolbar-count{padding:0 6px;font-size:11px;}
+    .flip-toolbar-btn{width:28px;height:28px;font-size:13px;}
+    .flip-grid-panel{inset:60px 8px 80px;padding:14px;}
+  }
+
+  /* ===== EXPERIENCE ===== */
+  .exp-item{
+    display:grid;grid-template-columns:160px 1fr;gap:24px;
+    padding:22px 0;border-top:1px solid var(--line);
+  }
+  .exp-item:first-of-type{border-top:none;}
+  .exp-period{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent-2);}
+  .exp-role{font-family:'Space Grotesk',sans-serif;font-weight:500;font-size:16.5px;}
+  .exp-org{font-size:13px;color:var(--text-muted);margin-top:3px;}
+  .exp-desc{font-size:13.5px;color:var(--text-muted);margin-top:8px;line-height:1.6;}
+
+  .achv-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:32px;}
+  .achv-pill{
+    font-size:12.5px;padding:8px 14px;border-radius:999px;
+    background:var(--surface);border:1px solid var(--line);color:var(--text-muted);
+    display:flex;align-items:center;gap:8px;
+  }
+  .achv-pill::before{content:'★';color:var(--accent);font-size:11px;}
+
+  /* ===== CONTACT ===== */
+  .contact-box{
+    background:var(--surface);border:1px solid var(--line);border-radius:16px;
+    padding:48px;display:grid;grid-template-columns:1fr 1fr;gap:48px;
+  }
+  .contact-links{display:flex;flex-direction:column;gap:14px;margin-top:24px;}
+  .contact-link{font-family:'JetBrains Mono',monospace;font-size:13.5px;color:var(--text-muted);display:flex;align-items:center;gap:10px;}
+  .contact-link:hover{color:var(--accent-2);}
+  .form-field{margin-bottom:14px;}
+  .form-field input,.form-field textarea{
+    width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;
+    padding:12px 14px;color:var(--text);font-family:'Inter',sans-serif;font-size:13.5px;
+    resize:none;
+  }
+  .form-field input:focus,.form-field textarea:focus{outline:2px solid var(--accent);outline-offset:1px;}
+  .form-field label{font-size:12px;color:var(--text-muted);display:block;margin-bottom:6px;}
+
+  footer{
+    text-align:center;padding:40px;font-family:'JetBrains Mono',monospace;
+    font-size:12px;color:var(--text-muted);border-top:1px solid var(--line);
+  }
+
+  /* ===== WORK DETAIL MODAL ===== */
+  .modal-overlay{
+    position:fixed;inset:0;z-index:100;
+    background:rgba(8,8,10,0.75);
+    backdrop-filter:blur(3px);
+    display:flex;align-items:center;justify-content:center;
+    padding:24px;
+    opacity:0;pointer-events:none;
+    transition:opacity 0.25s ease;
+  }
+  .modal-overlay.open{opacity:1;pointer-events:auto;}
+  .modal-box{
+    background:var(--surface);border:1px solid var(--line);border-radius:16px;
+    max-width:640px;width:100%;max-height:85vh;overflow-y:auto;
+    transform:translateY(12px) scale(0.98);
+    transition:transform 0.25s ease;
+  }
+  .modal-overlay.open .modal-box{transform:translateY(0) scale(1);}
+  .modal-media{
+    aspect-ratio:16/9;background:linear-gradient(135deg,#1d1d26,#0e0e13);
+    display:flex;align-items:center;justify-content:center;
+    border-bottom:1px solid var(--line);
+    position:relative;overflow:hidden;
+  }
+  .modal-media.portrait{aspect-ratio:9/13;max-width:280px;margin:0 auto;}
+  .modal-media img{width:100%;height:100%;object-fit:contain;display:block;}
+  .modal-media video{width:100%;height:100%;object-fit:contain;display:block;background:#000;}
+  .modal-media .play{width:46px;height:46px;border-radius:50%;border:1px solid var(--text-muted);display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:14px;}
+  .modal-close{
+    position:absolute;top:14px;right:14px;z-index:2;
+    width:34px;height:34px;border-radius:50%;
+    background:rgba(10,10,13,0.7);border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;
+    color:var(--text);font-size:16px;line-height:1;cursor:pointer;
+  }
+  .modal-close:hover{border-color:var(--accent);color:var(--accent-2);}
+  .modal-body{padding:28px 32px 32px;}
+  .modal-tag{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.08em;color:var(--accent-2);text-transform:uppercase;}
+  .modal-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:24px;margin-top:10px;}
+  .modal-meta{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-muted);margin-top:6px;}
+  .modal-desc{font-size:14.5px;line-height:1.7;color:var(--text-muted);margin-top:18px;}
+  .modal-links{display:flex;gap:12px;margin-top:24px;flex-wrap:wrap;}
+  .modal-link{
+    display:flex;align-items:center;gap:7px;
+    padding:9px 16px;border-radius:999px;border:1px solid var(--line);
+    font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text);
+    transition:border-color .2s,color .2s;
+  }
+  .modal-link:hover{border-color:var(--accent);color:var(--accent-2);}
+  .modal-link svg{width:13px;height:13px;flex-shrink:0;}
+  [data-open]{cursor:pointer;}
+
+  /* ============================================================
+     RESPONSIVE — three real tiers, plus the existing max-width
+     containers already handle large desktop/TV sizing gracefully
+     (content caps at 1080px and centers, so big screens just get
+     more breathing room on the sides rather than stretched content).
+     ============================================================ */
+
+  /* ----- TABLET (≤1024px): tighten spacing, keep desktop nav ----- */
+  @media (max-width:1024px){
+    .section{padding:80px 36px;}
+    .hero{padding:70px 36px 60px;gap:40px;}
+    h1.display{font-size:46px;}
+    .card-grid,.skill-grid{grid-template-columns:repeat(2,1fr);}
+    .contact-box{padding:36px;}
+  }
+
+  /* ----- MOBILE (≤860px): hamburger nav takes over, single columns ----- */
+  @media (max-width:860px){
+    nav{padding:16px 20px;}
+    .nav-links,.nav-cta{display:none;}
+    .hamburger-btn{display:flex;}
+
+    .hero{grid-template-columns:1fr;padding:60px 24px 50px;gap:36px;text-align:left;}
+    h1.display{font-size:38px;}
+    .hero-media{max-width:340px;}
+
+    .section{padding:56px 24px;}
+    h2.display{font-size:28px;}
+
+    .card-grid,.skill-grid{grid-template-columns:1fr;}
+    .contact-box{grid-template-columns:1fr;padding:28px 24px;gap:28px;}
+    .exp-item{grid-template-columns:1fr;gap:6px;}
+
+    .smart-grid[data-count="3"],
+    .smart-grid[data-count="4"],
+    .smart-grid[data-count="5plus"]{grid-template-columns:1fr;grid-template-rows:auto;}
+    .smart-grid[data-count="3"] .sg-item:first-child{grid-row:auto;}
+
+    .modal-box{max-height:90vh;}
+    .modal-body{padding:22px 20px 26px;}
+    .modal-title{font-size:20px;}
+
+    .reel-row{justify-content:center;}
+    .sg-item.portrait{width:220px;}
+
+    .flip-toolbar{max-width:94vw;overflow-x:auto;}
+  }
+
+  /* ----- SMALL PHONE (≤480px): tighter type, full-width touch targets ----- */
+  @media (max-width:480px){
+    h1.display{font-size:32px;}
+    h2.display{font-size:24px;}
+    .hero-sub{font-size:15px;}
+    .hero-btns{flex-direction:column;}
+    .hero-btns .btn{width:100%;text-align:center;}
+
+    .section{padding:48px 18px;}
+    .summary-box{padding:24px 22px;}
+    .skill-card{padding:22px 20px;}
+
+    .achv-row{gap:8px;}
+    .achv-pill{font-size:11.5px;padding:7px 12px;}
+
+    .contact-links{gap:10px;}
+    .contact-link{font-size:12.5px;}
+
+    .flip-toolbar-count{display:none;} /* reclaim space on very narrow screens */
+    .mobile-menu{padding:80px 20px 24px;}
+  }
+
+  /* ----- LARGE DISPLAYS / TV (≥1600px): a touch more breathing room ----- */
+  @media (min-width:1600px){
+    .section,.hero,nav{max-width:1240px;}
+    h1.display{font-size:60px;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    nav, .project-card, .pill, .flip-nav-btn, .btn, .modal-overlay, .modal-box, .mobile-menu, .hamburger-btn span{transition:none;}
+  }
+</style>
+</head>
+<body>
+
+<nav id="navbar">
+  <div class="logo">anish<span>.</span>shetty</div>
+  <div class="nav-links">
+    <a href="#work">Work</a>
+    <a href="#video">Video</a>
+    <a href="#design">Design</a>
+    <a href="#experience">Experience</a>
+    <a href="#contact">Contact</a>
+  </div>
+  <div class="nav-cta">
+    <a class="btn btn-secondary" href="#" id="resumeBtn" target="_blank" rel="noopener">Resume</a>
+    <a class="btn btn-primary" href="#contact">Contact</a>
+  </div>
+  <button class="hamburger-btn" id="hamburgerBtn" aria-label="Open menu" aria-expanded="false">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<div class="mobile-menu" id="mobileMenu">
+  <a href="#work">Work</a>
+  <a href="#video">Video</a>
+  <a href="#design">Design</a>
+  <a href="#experience">Experience</a>
+  <a href="#contact">Contact</a>
+  <a href="#" id="resumeBtnMobile" target="_blank" rel="noopener">Resume</a>
+</div>
+
+<main>
+
+<!-- HERO -->
+<div class="hero">
+  <div>
+    <div class="hero-eyebrow">// final-year ISE student · MITE, Mangalore</div>
+    <h1 class="display">Anish Shetty S<br><span class="glow-text">Engineer. Editor. Designer.</span></h1>
+    <p class="hero-sub" id="heroTagline">I build things end to end — write the code, shoot and cut the video, design the poster that sells it. Currently finishing my B.E. in Information Science at MITE.</p>
+    <div class="hero-btns">
+      <a class="btn btn-primary" href="#work">View Work</a>
+      <a class="btn btn-secondary" href="#contact">Get in Touch</a>
+    </div>
+  </div>
+  <div class="hero-media">
+    <video id="introVideo" autoplay muted playsinline>
+      <source src="" type="video/mp4">
+    </video>
+    <img id="introStill" src="" alt="Anish Shetty S">
+  </div>
+</div>
+
+<!-- SUMMARY -->
+<div class="section bordered">
+  <div class="label" id="aboutLabel">about</div>
+  <h2 class="display" id="aboutHeading">Two ways of solving the same problem</h2>
+  <div class="ruler"><div class="ruler-line"></div></div>
+  <div class="summary-box">
+    <p class="body" id="summaryText" style="max-width:100%;">
+      I'm an Information Science Engineering student who likes building practical, user-focused solutions —
+      Python, Arduino, and web development are my daily tools. Outside of code, I lead media teams, coordinate
+      photography, and cut promotional videos that need to land fast. Most of what I make sits at the
+      intersection: engineering precision applied to things people actually see and feel.
+    </p>
+  </div>
+</div>
+
+<!-- SKILLS -->
+<div class="section bordered">
+  <div class="label" id="skillsLabel">skills</div>
+  <h2 class="display" id="skillsHeading">What I work with</h2>
+  <div class="ruler"><div class="ruler-line"></div></div>
+
+  <div class="skill-grid" id="skillGrid"></div>
+</div>
+
+<!-- PROJECTS / CODE -->
+<div class="section bordered" id="work">
+  <div class="label" id="workLabel">work</div>
+  <h2 class="display" id="workHeading">Projects</h2>
+  <div class="ruler"><div class="ruler-line"></div><span class="ruler-count" id="projectCount"></span></div>
+
+  <div class="card-grid" id="projectGrid"></div>
+</div>
+
+<!-- VIDEO -->
+<div class="section bordered" id="video">
+  <div class="label" id="videoLabel">videography & editing</div>
+  <h2 class="display" id="videoHeading">Reels & edits</h2>
+  <p class="body">Layout balances automatically based on how many items exist and their orientation. Landscape edits and vertical reels (9:16) are grouped and arranged separately.</p>
+  <div class="ruler"><div class="ruler-line"></div></div>
+
+  <div class="filter-row">
+    <button class="pill active" data-filter="all">ALL</button>
+    <button class="pill" data-filter="landscape">LANDSCAPE</button>
+    <button class="pill" data-filter="reels">REELS</button>
+  </div>
+
+  <div id="videoLandscapeGrid" class="smart-grid"></div>
+  <div id="videoReelRow" class="reel-row" style="margin-top:24px;"></div>
+</div>
+
+<!-- DESIGN -->
+<div class="section bordered" id="design">
+  <div class="label" id="designLabel">graphic design</div>
+  <h2 class="display" id="designHeading">Posters & multi-page work</h2>
+  <p class="body">Single-page work shows as a flat poster card. Multi-page pieces (brochures, decks) open as an interactive flipbook — click an item to view.</p>
+  <div class="ruler"><div class="ruler-line"></div></div>
+
+  <div id="designGrid" class="smart-grid" style="margin-bottom:40px;"></div>
+</div>
+
+<!-- EXPERIENCE -->
+<div class="section bordered" id="experience">
+  <div class="label" id="experienceLabel">experience & recognition</div>
+  <h2 class="display" id="experienceHeading">Where I've shown up</h2>
+  <div class="ruler"><div class="ruler-line"></div></div>
+
+  <div id="expList"></div>
+  <div class="achv-row" id="achvList"></div>
+</div>
+
+<!-- CUSTOM SECTION — hidden by default, shown only if enabled + has cards -->
+<div class="section bordered" id="customSection" style="display:none;">
+  <div class="label">notices</div>
+  <h2 class="display" id="customSectionTitle">Notices</h2>
+  <p class="body" id="customSectionSubtitle" style="display:none;"></p>
+  <div class="ruler"><div class="ruler-line"></div></div>
+  <div class="smart-grid" id="customGrid"></div>
+</div>
+
+<!-- CONTACT -->
+<div class="section bordered" id="contact">
+  <div class="label" id="contactLabel">contact</div>
+  <h2 class="display" id="contactHeading">Let's build something</h2>
+  <div class="ruler"><div class="ruler-line"></div></div>
+
+
+  <div class="contact-box">
+    <div>
+      <p class="body" style="max-width:100%;">Open to internships, freelance edits, and design work. Reach out directly or use the form.</p>
+      <div class="contact-links">
+        <a class="contact-link" href="mailto:anishshettyyy@gmail.com">→ anishshettyyy@gmail.com</a>
+        <a class="contact-link" href="https://github.com/anishshettyyy" target="_blank" rel="noopener">→ github.com/anishshettyyy</a>
+        <a class="contact-link" href="https://www.linkedin.com/in/anish-shetty-s-356079293" target="_blank" rel="noopener">→ linkedin.com/in/anish-shetty-s</a>
+        <div id="socialLinksContainer"></div>
+      </div>
+    </div>
+    <form id="contactForm">
+      <div class="form-field"><label for="cname">Name</label><input id="cname" type="text" placeholder="Your name" required></div>
+      <div class="form-field"><label for="cemail">Email</label><input id="cemail" type="email" placeholder="you@email.com" required></div>
+      <div class="form-field"><label for="cmsg">Message</label><textarea id="cmsg" rows="3" placeholder="What are you building?" required></textarea></div>
+      <button type="submit" class="btn btn-primary" style="width:100%;text-align:center;margin-top:8px;">Send Message</button>
+    </form>
+  </div>
+</div>
+
+</main>
+
+<!-- WORK DETAIL MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box" id="modalBox" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-media" id="modalMedia">
+      <button class="modal-close" id="modalClose" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-tag" id="modalTag"></div>
+      <div class="modal-title display" id="modalTitle"></div>
+      <div class="modal-meta" id="modalMeta"></div>
+      <p class="modal-desc" id="modalDesc"></p>
+      <div class="modal-links" id="modalLinks"></div>
+    </div>
+  </div>
+</div>
+
+<!-- FLIPBOOK MODAL (multi-page design pieces — 3D page-curl viewer) -->
+<div class="modal-overlay" id="flipOverlay">
+  <div class="flip-top-bar">
+    <div class="flip-title-label mono" id="flipTitleLabel"></div>
+    <button class="modal-close" id="flipClose" aria-label="Close">✕</button>
+  </div>
+
+  <div class="flip-stage">
+    <button class="flip-nav-btn" id="flipPrevBtn" aria-label="Previous page">‹</button>
+    <div id="flipBookContainer"></div>
+    <button class="flip-nav-btn" id="flipNextBtn" aria-label="Next page">›</button>
+  </div>
+
+  <!-- thumbnail grid overlay, toggled by the grid button in the toolbar -->
+  <div class="flip-grid-panel" id="flipGridPanel">
+    <div class="flip-grid-inner" id="flipGridInner"></div>
+  </div>
+
+  <div class="flip-toolbar">
+    <span class="flip-toolbar-count mono" id="flipPageIndicator">1 / 1</span>
+    <button class="flip-toolbar-btn" id="flipGridBtn" aria-label="Page thumbnails" title="Page thumbnails">▦</button>
+    <button class="flip-toolbar-btn" id="flipZoomInBtn" aria-label="Zoom in" title="Zoom in">+</button>
+    <button class="flip-toolbar-btn" id="flipZoomOutBtn" aria-label="Zoom out" title="Zoom out">−</button>
+    <button class="flip-toolbar-btn" id="flipFullscreenBtn" aria-label="Fullscreen" title="Fullscreen">⛶</button>
+  </div>
+</div>
+
+<footer>// anish shetty s — engineer · editor · designer — 2026</footer>
+
+<script>
+  // ===== SUPABASE CONFIG =====
+  // The anon key is safe to expose in frontend code — that's its purpose.
+  // It only allows what the database's Row Level Security policies permit
+  // (public read, admin-only write) — see schema.sql.
+  const SUPABASE_URL = 'https://hjyexinxxdcywvinyaut.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhqeWV4aW54eGRjeXd2aW55YXV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MjY0ODgsImV4cCI6MjA5NzMwMjQ4OH0.U-VDiO1yugPoD6b3jm-C8rqdo5yC7GsPv4gJ5rDcnDE';
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // ===== AUTO-HIDE NAVBAR ON SCROLL =====
+  (function(){
+    const nav = document.getElementById('navbar');
+    let lastY = window.scrollY;
+    let ticking = false;
+
+    function onScroll(){
+      const currentY = window.scrollY;
+      if (currentY > lastY && currentY > 80) {
+        nav.classList.add('nav-hidden'); // scrolling down
+      } else {
+        nav.classList.remove('nav-hidden'); // scrolling up
+      }
+      lastY = currentY;
+      ticking = false;
+    }
+
+    window.addEventListener('scroll', function(){
+      if (!ticking) {
+        requestAnimationFrame(onScroll);
+        ticking = true;
+      }
+    });
+  })();
+
+  // ===== MOBILE HAMBURGER MENU =====
+  (function(){
+    const btn = document.getElementById('hamburgerBtn');
+    const menu = document.getElementById('mobileMenu');
+
+    function closeMenu(){
+      menu.classList.remove('open');
+      btn.classList.remove('open');
+      btn.setAttribute('aria-expanded', 'false');
+    }
+    function toggleMenu(){
+      const isOpen = menu.classList.toggle('open');
+      btn.classList.toggle('open', isOpen);
+      btn.setAttribute('aria-expanded', String(isOpen));
+    }
+
+    btn.addEventListener('click', toggleMenu);
+    menu.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeMenu); });
+    window.addEventListener('resize', function(){ if (window.innerWidth > 860) closeMenu(); });
+  })();
+
+  // ===== HERO: PLAY INTRO VIDEO ONCE, THEN SETTLE ON STILL IMAGE =====
+  (function(){
+    const video = document.getElementById('introVideo');
+    const img = document.getElementById('introStill');
+
+    // Replace these with real asset paths/URLs when ready
+    video.querySelector('source').src = ''; // e.g. '/assets/intro.mp4'
+    img.src = ''; // e.g. '/assets/profile-still.jpg'
+
+    function showStill(){
+      video.classList.add('hidden');
+      img.classList.add('visible');
+    }
+
+    if (video.querySelector('source').src) {
+      video.addEventListener('ended', showStill);
+      video.play().catch(showStill); // autoplay might be blocked — fall back to still
+    } else {
+      // no video source yet — just show the still image placeholder
+      showStill();
+    }
+  })();
+
+  // ===== FLIPBOOK (multi-page design pieces — real 3D page curl via StPageFlip) =====
+  (function(){
+    const overlay = document.getElementById('flipOverlay');
+    const stage = document.querySelector('#flipOverlay .flip-stage');
+    const container = document.getElementById('flipBookContainer');
+    const closeBtn = document.getElementById('flipClose');
+    const prevBtn = document.getElementById('flipPrevBtn');
+    const nextBtn = document.getElementById('flipNextBtn');
+    const indicator = document.getElementById('flipPageIndicator');
+    const titleLabel = document.getElementById('flipTitleLabel');
+    const gridBtn = document.getElementById('flipGridBtn');
+    const gridPanel = document.getElementById('flipGridPanel');
+    const gridInner = document.getElementById('flipGridInner');
+    const zoomInBtn = document.getElementById('flipZoomInBtn');
+    const zoomOutBtn = document.getElementById('flipZoomOutBtn');
+    const fullscreenBtn = document.getElementById('flipFullscreenBtn');
+
+    let pageFlipInstance = null;
+    let currentPageUrls = [];
+    let zoomLevel = 1;
+
+    // Loads the first page's real image to read its natural width/height,
+    // so the book is sized to the design's ORIGINAL aspect ratio instead of
+    // being forced into a fixed portrait/9:16 box.
+    function getImageNaturalSize(url){
+      return new Promise(function(resolve){
+        const img = new Image();
+        img.onload = function(){ resolve({ w: img.naturalWidth, h: img.naturalHeight }); };
+        img.onerror = function(){ resolve({ w: 3, h: 4 }); }; // fallback ratio if the image fails to load
+        img.src = url;
+      });
+    }
+
+    async function openFlipbook(pageUrls, title){
+      currentPageUrls = pageUrls;
+      titleLabel.textContent = title || '';
+      container.innerHTML = ''; // clear any previous instance's DOM
+      zoomLevel = 1;
+      container.style.transform = 'scale(1)';
+      gridPanel.classList.remove('open');
+
+      const natural = await getImageNaturalSize(pageUrls[0]);
+      const ratio = natural.w / natural.h;
+
+      // Fit a SINGLE page within the available stage space, respecting its
+      // real aspect ratio. width/height passed to StPageFlip describe one
+      // page's size — the library handles the cover (single page) and the
+      // spreads (two pages side-by-side) on its own from there.
+      // On narrow screens the library collapses to single-page view anyway,
+      // so we can afford a much larger share of the viewport width there.
+      const widthRatio = window.innerWidth <= 640 ? 0.85 : 0.42;
+      const toolbarReserve = window.innerWidth <= 640 ? 150 : 170;
+      const availW = Math.min(window.innerWidth * widthRatio, 480);
+      const availH = window.innerHeight - toolbarReserve;
+      let pageW = availW, pageH = pageW / ratio;
+      if (pageH > availH){ pageH = availH; pageW = pageH * ratio; }
+
+      pageFlipInstance = new St.PageFlip(container, {
+        width: Math.round(pageW),
+        height: Math.round(pageH),
+        size: 'fixed',
+        maxShadowOpacity: 0.5,
+        showCover: true,        // first page opens alone, like a real front cover
+        usePortrait: false,     // keep two-page spreads on desktop; the library
+                                 // still auto-switches to single-page on narrow
+                                 // screens on its own
+        mobileScrollSupport: false
+      });
+
+      pageFlipInstance.loadFromImages(pageUrls);
+      pageFlipInstance.on('flip', function(e){ updateIndicator(e.data); });
+
+      updateIndicator(0);
+      renderGridThumbs(pageUrls);
+      overlay.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function updateIndicator(current){
+      indicator.textContent = (current + 1) + ' / ' + currentPageUrls.length;
+    }
+
+    function renderGridThumbs(pageUrls){
+      gridInner.innerHTML = pageUrls.map(function(url, i){
+        return '<div class="flip-grid-thumb" data-page="' + i + '">' +
+          '<img src="' + url + '" alt="page ' + (i+1) + '" loading="lazy">' +
+          '<div class="num">' + (i+1) + '</div>' +
+        '</div>';
+      }).join('');
+      gridInner.querySelectorAll('[data-page]').forEach(function(el){
+        el.addEventListener('click', function(){
+          const idx = parseInt(el.getAttribute('data-page'));
+          if (pageFlipInstance) pageFlipInstance.flip(idx);
+          gridPanel.classList.remove('open');
+        });
+      });
+    }
+
+    function closeFlipbook(){
+      overlay.classList.remove('open');
+      document.body.style.overflow = '';
+      gridPanel.classList.remove('open');
+      if (document.fullscreenElement) document.exitFullscreen().catch(function(){});
+      if (pageFlipInstance){ pageFlipInstance.destroy(); pageFlipInstance = null; }
+      container.innerHTML = '';
+    }
+
+    function setZoom(delta){
+      zoomLevel = Math.min(2, Math.max(0.6, zoomLevel + delta));
+      container.style.transform = 'scale(' + zoomLevel + ')';
+    }
+
+    prevBtn.addEventListener('click', function(){ if (pageFlipInstance) pageFlipInstance.flipPrev(); });
+    nextBtn.addEventListener('click', function(){ if (pageFlipInstance) pageFlipInstance.flipNext(); });
+    closeBtn.addEventListener('click', closeFlipbook);
+    overlay.addEventListener('click', function(e){ if (e.target === overlay) closeFlipbook(); });
+
+    gridBtn.addEventListener('click', function(){
+      gridPanel.classList.toggle('open');
+      gridBtn.classList.toggle('active', gridPanel.classList.contains('open'));
+    });
+    zoomInBtn.addEventListener('click', function(){ setZoom(0.15); });
+    zoomOutBtn.addEventListener('click', function(){ setZoom(-0.15); });
+    fullscreenBtn.addEventListener('click', function(){
+      if (!document.fullscreenElement){
+        overlay.requestFullscreen().catch(function(){ /* fullscreen not available — silently ignore */ });
+      } else {
+        document.exitFullscreen().catch(function(){});
+      }
+    });
+
+    document.addEventListener('keydown', function(e){
+      if (!overlay.classList.contains('open')) return;
+      if (e.key === 'Escape') closeFlipbook();
+      if (e.key === 'ArrowRight' && pageFlipInstance) pageFlipInstance.flipNext();
+      if (e.key === 'ArrowLeft' && pageFlipInstance) pageFlipInstance.flipPrev();
+    });
+
+    // Exposed globally so the work-detail modal can launch this instead of
+    // its normal media view, whenever a multi-page item is opened.
+    window.openFlipbook = openFlipbook;
+  })();
+
+  // ===== CONTACT FORM — saves to contact_messages, visible in the admin panel =====
+  document.getElementById('contactForm').addEventListener('submit', async function(e){
+    e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    const originalText = btn.textContent;
+    const name = document.getElementById('cname').value.trim();
+    const email = document.getElementById('cemail').value.trim();
+    const message = document.getElementById('cmsg').value.trim();
+
+    btn.disabled = true; btn.textContent = 'Sending...';
+    const { error } = await sb.from('contact_messages').insert({ name: name, email: email, message: message });
+    btn.disabled = false; btn.textContent = originalText;
+
+    if (error){
+      alert('Could not send your message — please try again or email directly. (' + error.message + ')');
+      return;
+    }
+    e.target.reset();
+    btn.textContent = 'Sent ✓';
+    setTimeout(function(){ btn.textContent = originalText; }, 2500);
+  });
+
+  // ===== SHARED WORK DATA =====
+  // Populated live from Supabase below. Empty to start — loadAllData() fills
+  // this in, then triggers every render function. The rest of the code
+  // (grid layout + modal) only depends on this shape per entry:
+  // { tag, title, meta, desc, mediaType, portrait, links, category }
+  const workData = {};
+
+  const githubIconSvg = '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.74.54 1.5 0 1.09-.01 1.95-.01 2.22 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>';
+
+  function renderProjectCard(p){
+    workData[p.id] = {
+      tag: p.tag || '// code', title: p.title, meta: p.tech_stack || '',
+      desc: p.description, mediaType: 'image', mediaUrl: p.cover_url,
+      links: p.github_url ? [{ label: 'GitHub', url: p.github_url, icon: 'github' }] : []
+    };
+    const thumb = p.cover_url
+      ? '<div class="project-thumb"><img src="' + p.cover_url + '" alt="' + escapeHtmlClient(p.title) + '" loading="lazy"></div>'
+      : '<div class="project-thumb"></div>';
+    return '<div class="project-card" data-open data-id="' + p.id + '">' +
+      thumb +
+      '<div class="project-body">' +
+        '<div class="project-tag">' + (p.tag || '// code') + '</div>' +
+        '<div class="project-title">' + p.title + '</div>' +
+        '<div class="project-sub">' + p.description + '</div>' +
+        '<div class="project-footer">' +
+          '<span>' + (p.tech_stack || '') + '</span>' +
+          (p.github_url ?
+            '<a class="gh-btn" href="' + p.github_url + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">' + githubIconSvg + 'GitHub</a>'
+            : '') +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function escapeHtmlClient(str){
+    if (!str) return '';
+    return String(str).replace(/[&<>"']/g, function(c){
+      return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+    });
+  }
+
+  async function loadProjects(){
+    const { data, error } = await sb.from('projects').select('*').order('sort_order');
+    const grid = document.getElementById('projectGrid');
+    const countEl = document.getElementById('projectCount');
+    if (error || !data || data.length === 0){
+      grid.innerHTML = '<p class="body">// no projects yet — add some from the admin panel</p>';
+      countEl.textContent = '';
+      return;
+    }
+    grid.innerHTML = data.map(renderProjectCard).join('');
+    countEl.textContent = '[ ' + String(data.length).padStart(2,'0') + ' / ' + String(data.length).padStart(2,'0') + ' ]';
+    document.querySelectorAll('#projectGrid [data-open]').forEach(function(el){
+      el.addEventListener('click', function(){ window.openWorkModal(el.getAttribute('data-id')); });
+    });
+  }
+
+  async function loadSkills(){
+    const { data, error } = await sb.from('skills').select('*').order('sort_order');
+    const container = document.getElementById('skillGrid');
+    if (error || !data){ container.innerHTML = ''; return; }
+
+    const groups = { code: { tag: '// code', title: 'Languages & data', items: [] },
+                      tools: { tag: '// tools', title: 'Software', items: [] },
+                      craft: { tag: '// craft', title: 'Creative', items: [] } };
+    data.forEach(function(s){ if (groups[s.category]) groups[s.category].items.push(s.label); });
+
+    container.innerHTML = Object.values(groups).map(function(g){
+      return '<div class="skill-card"><div class="tag">' + g.tag + '</div><h3>' + g.title + '</h3>' +
+        '<div class="chip-list">' + g.items.map(function(i){ return '<span class="chip">' + i + '</span>'; }).join('') + '</div></div>';
+    }).join('');
+  }
+
+  async function loadExperience(){
+    const { data, error } = await sb.from('experience').select('*').order('sort_order');
+    const list = document.getElementById('expList');
+    const achv = document.getElementById('achvList');
+    if (error || !data){ list.innerHTML = ''; achv.innerHTML = ''; return; }
+
+    const rows = data.filter(function(e){ return !e.is_achievement; });
+    const achievements = data.filter(function(e){ return e.is_achievement; });
+
+    list.innerHTML = rows.map(function(e){
+      return '<div class="exp-item"><div class="exp-period">' + e.period + '</div><div>' +
+        '<div class="exp-role">' + e.role + '</div>' +
+        (e.organization ? '<div class="exp-org">' + e.organization + '</div>' : '') +
+        (e.description ? '<div class="exp-desc">' + e.description + '</div>' : '') +
+        '</div></div>';
+    }).join('');
+
+    achv.innerHTML = achievements.map(function(e){
+      return '<div class="achv-pill">' + e.role + (e.period && e.period !== '—' ? ' — ' + e.period : '') + '</div>';
+    }).join('');
+  }
+
+  async function loadCustomSection(){
+    const { data: settings, error: settingsError } = await sb.from('site_settings').select('custom_section_enabled, custom_section_title, custom_section_subtitle').eq('id', 1).single();
+    const section = document.getElementById('customSection');
+
+    if (settingsError){ console.warn('Custom section: settings query failed —', settingsError.message); section.style.display = 'none'; return; }
+    if (!settings || !settings.custom_section_enabled){
+      console.info('Custom section: toggle is off or settings missing —', settings);
+      section.style.display = 'none';
+      return;
+    }
+
+    const { data, error } = await sb.from('custom_section_items').select('*').order('sort_order');
+    if (error){ console.warn('Custom section: items query failed —', error.message); section.style.display = 'none'; return; }
+    if (!data || data.length === 0){
+      console.info('Custom section: enabled, but no cards found in custom_section_items.');
+      section.style.display = 'none';
+      return;
+    }
+
+    console.info('Custom section: rendering', data.length, 'card(s).');
+
+    document.getElementById('customSectionTitle').textContent = settings.custom_section_title || 'Notices';
+    const subEl = document.getElementById('customSectionSubtitle');
+    if (settings.custom_section_subtitle){
+      subEl.textContent = settings.custom_section_subtitle;
+      subEl.style.display = 'block';
+    }
+
+    // Register every card into workData and hand the ids to the SAME
+    // auto-layout grid engine Videography/Design use — 1 item centers,
+    // 2 sit side by side, 3 becomes featured+stacked, and so on.
+    const ids = data.map(function(c){
+      const id = 'custom-' + c.id;
+      workData[id] = {
+        tag: '// notice', title: c.title, sgTag: c.title, meta: '',
+        desc: c.description || '',
+        mediaType: c.media_type === 'video' && c.media_url ? 'video' : 'image',
+        mediaUrl: c.media_type === 'video' ? c.media_url : null,
+        coverUrl: c.cover_url,
+        links: c.link_url ? [{ label: c.link_label || 'View', url: c.link_url, icon: 'link' }] : []
+      };
+      return id;
+    });
+
+    renderGrid(document.getElementById('customGrid'), ids);
+    section.style.display = 'block';
+  }
+
+  async function loadSettings(){
+    const { data, error } = await sb.from('site_settings').select('*').eq('id', 1).single();
+    if (error || !data) return;
+
+    if (data.hero_tagline) document.getElementById('heroTagline').textContent = data.hero_tagline;
+    if (data.summary_text) document.getElementById('summaryText').textContent = data.summary_text;
+
+    // editable section headings/labels — falls back to the HTML's default
+    // text if a field is empty, so nothing ever goes blank
+    const headingMap = {
+      aboutLabel: data.about_label, aboutHeading: data.about_heading,
+      skillsLabel: data.skills_label, skillsHeading: data.skills_heading,
+      workLabel: data.work_label, workHeading: data.work_heading,
+      videoLabel: data.video_label, videoHeading: data.video_heading,
+      designLabel: data.design_label, designHeading: data.design_heading,
+      experienceLabel: data.experience_label, experienceHeading: data.experience_heading,
+      contactLabel: data.contact_label, contactHeading: data.contact_heading
+    };
+    Object.keys(headingMap).forEach(function(elId){
+      const val = headingMap[elId];
+      if (val) document.getElementById(elId).textContent = val;
+    });
+
+    const form = document.getElementById('contactForm');
+    if (data.contact_form_enabled === false){
+      form.innerHTML = '<p class="body" style="max-width:100%;">// the contact form is currently turned off — reach out directly using the links instead.</p>';
+    }
+
+    // hero video/still, only swapped in if URLs exist in the database
+    if (data.hero_video_url){
+      const v = document.getElementById('introVideo');
+      v.querySelector('source').src = data.hero_video_url;
+      v.load();
+    }
+    if (data.hero_still_url){
+      document.getElementById('introStill').src = data.hero_still_url;
+    }
+
+    // resume button — disabled-looking until a resume is actually uploaded
+    const resumeBtn = document.getElementById('resumeBtn');
+    const resumeBtnMobile = document.getElementById('resumeBtnMobile');
+    [resumeBtn, resumeBtnMobile].forEach(function(btn){
+      if (data.resume_url){
+        btn.href = data.resume_url;
+      } else {
+        btn.href = '#';
+        btn.style.opacity = '0.5';
+        btn.style.cursor = 'default';
+        btn.addEventListener('click', function(e){ e.preventDefault(); });
+      }
+    });
+  }
+
+  // ===== SHARED AUTO-LAYOUT GRID HELPERS =====
+  // Used by Videography, Graphic Design, AND the Custom Section — one
+  // balancing algorithm, reused everywhere a "card grid of N items" exists.
+  function pickLayoutKey(count){
+    if (count <= 0) return null;
+    if (count === 1) return '1';
+    if (count === 2) return '2';
+    if (count === 3) return '3';
+    if (count === 4) return '4';
+    return '5plus';
+  }
+
+  function renderSgItem(id){
+    const item = workData[id];
+    const portraitClass = item.portrait ? ' portrait' : '';
+    let mediaHtml = '';
+    if (item.coverUrl){
+      // a real cover/thumbnail image always wins — lighter and more
+      // reliable than relying on the browser to grab a video frame
+      mediaHtml = '<img src="' + item.coverUrl + '" alt="' + (item.title || '') + '" loading="lazy">';
+      if (item.mediaType === 'video') mediaHtml += '<div class="play">▶</div>';
+    } else if (item.mediaType === 'video' && item.mediaUrl){
+      mediaHtml = '<video src="' + item.mediaUrl + '" muted playsinline preload="metadata"></video><div class="play">▶</div>';
+    } else if (item.mediaType === 'video'){
+      mediaHtml = '<div class="play">▶</div>'; // no file uploaded yet — icon-only placeholder
+    } else if (item.mediaUrl){
+      mediaHtml = '<img src="' + item.mediaUrl + '" alt="' + (item.title || '') + '" loading="lazy">';
+    } else if (item.isMultipage && item.pageUrls && item.pageUrls.length){
+      mediaHtml = '<img src="' + item.pageUrls[0] + '" alt="' + (item.title || '') + '" loading="lazy">';
+    }
+    return '<div class="sg-item' + portraitClass + '" data-open data-id="' + id + '">' +
+      mediaHtml + '<div class="sg-tag">' + (item.sgTag || item.title) + '</div></div>';
+  }
+
+  function renderGrid(containerEl, ids){
+    const key = pickLayoutKey(ids.length);
+    if (!key){
+      containerEl.removeAttribute('data-count');
+      containerEl.innerHTML = '<p style="font-family:\'JetBrains Mono\',monospace;font-size:12.5px;color:var(--text-muted);">// nothing here yet — add items from the admin panel</p>';
+      return;
+    }
+    containerEl.setAttribute('data-count', key);
+    containerEl.innerHTML = ids.map(renderSgItem).join('');
+    attachOpenHandlers(containerEl);
+  }
+
+  function attachOpenHandlers(scopeEl){
+    scopeEl.querySelectorAll('[data-open]').forEach(function(el){
+      el.addEventListener('click', function(){
+        window.openWorkModal(el.getAttribute('data-id'));
+      });
+    });
+  }
+
+  // ===== AUTO-LAYOUT GRID ENGINE — videography & design specifics =====
+  // Loads media items, separates portrait (9:16 reels) from landscape,
+  // and feeds them into the shared renderGrid() above.
+  (function(){
+
+    let currentVideoLandscape = [];
+    let currentVideoPortrait = [];
+
+    async function loadMedia(){
+      const { data, error } = await sb.from('media_items').select('*').order('sort_order');
+      const videoLandscape = [];
+      const videoPortrait = [];
+      const design = [];
+
+      if (!error && data){
+        data.forEach(function(m){
+          workData[m.id] = {
+            tag: m.category === 'video' ? '// video' : '// design',
+            title: m.title, sgTag: m.tag_label || m.title, meta: m.meta || '',
+            desc: m.description || '', mediaType: m.media_type, portrait: m.orientation === 'portrait',
+            mediaUrl: m.media_url, coverUrl: m.cover_url,
+            links: m.external_url ? [{ label: 'Link', url: m.external_url, icon: 'link' }] : [],
+            isMultipage: m.is_multipage, pageUrls: m.page_urls
+          };
+          if (m.category === 'video' && m.orientation === 'portrait') videoPortrait.push(m.id);
+          else if (m.category === 'video') videoLandscape.push(m.id);
+          else design.push(m.id);
+        });
+      }
+
+      currentVideoLandscape = videoLandscape;
+      currentVideoPortrait = videoPortrait;
+      applyVideoFilter(currentVideoFilter);
+      renderGrid(document.getElementById('designGrid'), design);
+    }
+
+    let currentVideoFilter = 'all';
+
+    function applyVideoFilter(filter){
+      currentVideoFilter = filter;
+      const landscapeEl = document.getElementById('videoLandscapeGrid');
+      const reelRow = document.getElementById('videoReelRow');
+
+      const showLandscape = filter === 'all' || filter === 'landscape';
+      const showReels = filter === 'all' || filter === 'reels';
+
+      if (showLandscape){
+        renderGrid(landscapeEl, currentVideoLandscape);
+        landscapeEl.style.display = '';
+      } else {
+        landscapeEl.style.display = 'none';
+      }
+
+      if (showReels && currentVideoPortrait.length > 0){
+        reelRow.innerHTML = currentVideoPortrait.map(renderSgItem).join('');
+        attachOpenHandlers(reelRow);
+        reelRow.style.display = '';
+      } else {
+        reelRow.innerHTML = '';
+        reelRow.style.display = 'none';
+      }
+    }
+
+    // wire the ALL / LANDSCAPE / REELS pills to actually filter, instead of
+    // just toggling their own visual active state with no effect
+    document.querySelectorAll('#video .pill').forEach(function(pill){
+      pill.addEventListener('click', function(){
+        document.querySelectorAll('#video .pill').forEach(function(p){ p.classList.remove('active'); });
+        pill.classList.add('active');
+        applyVideoFilter(pill.getAttribute('data-filter'));
+      });
+    });
+
+    window.reloadMediaGrids = loadMedia; // exposed so the admin panel can trigger a refresh later
+    loadMedia();
+  })();
+
+  async function loadSocialLinks(){
+    const { data, error } = await sb.from('social_links').select('*').order('sort_order');
+    const container = document.getElementById('socialLinksContainer');
+    if (error || !data || data.length === 0){ container.innerHTML = ''; return; }
+    container.innerHTML = data.map(function(l){
+      return '<a class="contact-link" href="' + l.url + '" target="_blank" rel="noopener">→ ' + escapeHtmlClient(l.label) + '</a>';
+    }).join('');
+  }
+
+  loadProjects();
+  loadSkills();
+  loadExperience();
+  loadSettings();
+  loadSocialLinks();
+  loadCustomSection();
+
+  // ===== WORK DETAIL MODAL =====
+  (function(){
+    const overlay = document.getElementById('modalOverlay');
+    const mediaEl = document.getElementById('modalMedia');
+    const tagEl = document.getElementById('modalTag');
+    const titleEl = document.getElementById('modalTitle');
+    const metaEl = document.getElementById('modalMeta');
+    const descEl = document.getElementById('modalDesc');
+    const linksEl = document.getElementById('modalLinks');
+    const closeBtn = document.getElementById('modalClose');
+
+    const githubIcon = '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.74.54 1.5 0 1.09-.01 1.95-.01 2.22 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>';
+    const linkIcon = '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M6.5 3a.5.5 0 000 1H10a.5.5 0 01.5.5v3.5a.5.5 0 001 0V4.5A1.5 1.5 0 0010 3H6.5zM3 5.5A1.5 1.5 0 014.5 4H6a.5.5 0 010 1H4.5a.5.5 0 00-.5.5v6a.5.5 0 00.5.5h6a.5.5 0 00.5-.5V10a.5.5 0 011 0v1.5A1.5 1.5 0 0110.5 13h-6A1.5 1.5 0 013 11.5v-6z"/><path d="M5.146 10.854a.5.5 0 00.708 0L11 5.707V8.5a.5.5 0 001 0V4.5a.5.5 0 00-.5-.5H7.5a.5.5 0 000 1h2.793l-5.147 5.146a.5.5 0 000 .708z"/></svg>';
+
+    function getImageNaturalRatio(url){
+      return new Promise(function(resolve){
+        const img = new Image();
+        img.onload = function(){ resolve(img.naturalWidth / img.naturalHeight); };
+        img.onerror = function(){ resolve(null); };
+        img.src = url;
+      });
+    }
+
+    async function openModal(id){
+      const item = workData[id];
+      if (!item) return;
+
+      // Multi-page design pieces skip the normal modal entirely and open
+      // directly as an interactive flipbook — a static first-page preview
+      // with no way to turn pages would be a dead end for the visitor.
+      if (item.isMultipage && item.pageUrls && item.pageUrls.length && window.openFlipbook){
+        window.openFlipbook(item.pageUrls, item.title);
+        return;
+      }
+
+      tagEl.textContent = item.tag;
+      titleEl.textContent = item.title;
+      metaEl.textContent = item.meta;
+      descEl.textContent = item.desc;
+
+      // media area — sized to the REAL image ratio instead of a forced
+      // 16:9 box, and hidden completely (no empty placeholder) when the
+      // item has no actual file uploaded yet.
+      const hasVideo = item.mediaType === 'video' && item.mediaUrl;
+      const hasImage = item.mediaType !== 'video' && item.mediaUrl;
+
+      if (!hasVideo && !hasImage){
+        mediaEl.style.display = 'none';
+      } else {
+        mediaEl.style.display = 'flex';
+        mediaEl.style.aspectRatio = '16/9'; // sensible default while we measure
+        mediaEl.className = 'modal-media' + (item.portrait ? ' portrait' : '');
+
+        let modalMediaHtml = '<button class="modal-close" id="modalClose" aria-label="Close">✕</button>';
+        if (hasVideo){
+          modalMediaHtml += '<video src="' + item.mediaUrl + '" controls playsinline></video>';
+        } else {
+          modalMediaHtml += '<img src="' + item.mediaUrl + '" alt="' + (item.title || '') + '">';
+        }
+        mediaEl.innerHTML = modalMediaHtml;
+        document.getElementById('modalClose').addEventListener('click', closeModal);
+
+        // once we know the image's real shape, switch to that exact ratio
+        // instead of the 16:9 placeholder — videos keep 16:9 since that's
+        // the near-universal video frame shape.
+        if (hasImage && !item.portrait){
+          getImageNaturalRatio(item.mediaUrl).then(function(ratio){
+            if (ratio) mediaEl.style.aspectRatio = ratio;
+          });
+        }
+      }
+
+      // links
+      linksEl.innerHTML = '';
+      (item.links || []).forEach(function(l){
+        const a = document.createElement('a');
+        a.href = l.url; a.target = '_blank'; a.rel = 'noopener';
+        a.className = 'modal-link';
+        a.innerHTML = (l.icon === 'github' ? githubIcon : linkIcon) + l.label;
+        linksEl.appendChild(a);
+      });
+
+      overlay.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal(){
+      overlay.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    // Exposed globally so the dynamically-rendered video/design grid items
+    // (built by the grid engine above) can open the same modal.
+    window.openWorkModal = openModal;
+
+    // Static items already in the HTML at load time (the project cards).
+    // Video/design grid items attach their own click handlers when rendered.
+    document.querySelectorAll('[data-open]').forEach(function(el){
+      el.addEventListener('click', function(){
+        openModal(el.getAttribute('data-id'));
+      });
+    });
+
+    closeBtn.addEventListener('click', closeModal);
+
+    overlay.addEventListener('click', function(e){
+      if (e.target === overlay) closeModal(); // click outside modal box
+    });
+
+    document.addEventListener('keydown', function(e){
+      if (e.key === 'Escape' && overlay.classList.contains('open')) closeModal();
+    });
+  })();
+</script>
+
+</body>
+</html>

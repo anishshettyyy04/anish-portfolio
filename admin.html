@@ -1,0 +1,1532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Anish Shetty S</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.min.js"></script>
+<style>
+  :root{
+    --bg:#0A0A0D;
+    --surface:#13131A;
+    --surface-2:#1A1A23;
+    --line:#26262F;
+    --text:#F2F0EB;
+    --text-muted:#8B8B96;
+    --accent:#FF6B1A;
+    --accent-2:#FFB454;
+    --danger:#E5484D;
+    --success:#3DD68C;
+  }
+  *{margin:0;box-sizing:border-box;}
+
+  /* ===== CUSTOM SCROLLBAR — dark/themed instead of the default white one ===== */
+  ::-webkit-scrollbar{width:10px;height:10px;}
+  ::-webkit-scrollbar-track{background:var(--surface);}
+  ::-webkit-scrollbar-thumb{background:var(--line);border-radius:6px;border:2px solid var(--surface);}
+  ::-webkit-scrollbar-thumb:hover{background:var(--accent);}
+  *{scrollbar-width:thin;scrollbar-color:var(--line) var(--surface);}
+
+  body{
+    background:var(--bg);color:var(--text);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+  }
+  .mono{font-family:'JetBrains Mono',monospace;}
+  .display{font-family:'Space Grotesk',sans-serif;}
+  button,input,textarea,select{font-family:inherit;}
+  a{color:inherit;}
+
+  /* ===== LOGIN SCREEN ===== */
+  #loginScreen{
+    min-height:100vh;display:flex;align-items:center;justify-content:center;
+    padding:24px;
+  }
+  .login-box{
+    width:100%;max-width:380px;
+    background:var(--surface);border:1px solid var(--line);border-radius:16px;
+    padding:40px 36px;
+  }
+  .login-logo{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:19px;margin-bottom:6px;}
+  .login-logo span{color:var(--accent);}
+  .login-sub{font-size:13px;color:var(--text-muted);margin-bottom:28px;}
+  .field{margin-bottom:16px;}
+  .field label{font-size:12px;color:var(--text-muted);display:block;margin-bottom:6px;}
+  .field input{
+    width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;
+    padding:12px 14px;color:var(--text);font-size:14px;
+  }
+  .field input:focus{outline:2px solid var(--accent);outline-offset:1px;}
+  .btn{
+    font-size:13.5px;font-weight:500;padding:12px 22px;border-radius:10px;
+    cursor:pointer;border:1px solid transparent;display:inline-flex;
+    align-items:center;justify-content:center;gap:8px;
+  }
+  .btn-primary{background:var(--accent);color:#0A0A0D;width:100%;}
+  .btn-primary:hover{background:var(--accent-2);}
+  .btn-primary:disabled{opacity:0.5;cursor:not-allowed;}
+  .btn-secondary{background:transparent;border:1px solid var(--line);color:var(--text);}
+  .btn-secondary:hover{border-color:var(--text-muted);}
+  .btn-danger{background:transparent;border:1px solid var(--danger);color:var(--danger);}
+  .btn-danger:hover{background:var(--danger);color:#fff;}
+  .btn-sm{padding:7px 14px;font-size:12.5px;border-radius:8px;}
+
+  .error-msg{
+    font-size:12.5px;color:var(--danger);margin-top:12px;
+    display:none;
+  }
+  .error-msg.visible{display:block;}
+
+  /* ===== APP SHELL ===== */
+  #appShell{display:none;min-height:100vh;}
+  #appShell.visible{display:flex;}
+
+  .sidebar{
+    width:240px;flex-shrink:0;
+    background:var(--surface);border-right:1px solid var(--line);
+    display:flex;flex-direction:column;
+    padding:24px 16px;
+    position:sticky;top:0;height:100vh;
+  }
+  .sidebar-logo{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:17px;padding:0 8px 24px;}
+  .sidebar-logo span{color:var(--accent);}
+  .nav-item{
+    display:flex;align-items:center;gap:10px;
+    padding:11px 14px;border-radius:9px;
+    font-size:13.5px;color:var(--text-muted);cursor:pointer;
+    margin-bottom:2px;
+  }
+  .nav-item:hover{background:var(--surface-2);color:var(--text);}
+  .nav-item.active{background:var(--surface-2);color:var(--accent-2);}
+  .nav-item .dot{width:6px;height:6px;border-radius:50%;background:var(--line);flex-shrink:0;}
+  .nav-badge{
+    margin-left:auto;background:var(--accent);color:#0A0A0D;
+    font-size:10.5px;font-weight:600;border-radius:999px;
+    padding:1px 7px;line-height:1.4;
+  }
+  .nav-item.active .dot{background:var(--accent);}
+  .sidebar-footer{margin-top:auto;padding-top:16px;border-top:1px solid var(--line);}
+  .sidebar-footer .user-email{font-size:11.5px;color:var(--text-muted);padding:0 8px 10px;word-break:break-all;}
+
+  .main-area{flex:1;padding:36px 44px;max-width:1100px;}
+  .panel{display:none;}
+  .panel.active{display:block;}
+  .panel-header{margin-bottom:28px;}
+  .panel-header h1{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:26px;}
+  .panel-header p{font-size:13.5px;color:var(--text-muted);margin-top:6px;}
+
+  /* ===== TOAST ===== */
+  #toast{
+    position:fixed;bottom:28px;right:28px;z-index:200;
+    background:var(--surface);border:1px solid var(--line);border-radius:10px;
+    padding:14px 20px;font-size:13px;
+    transform:translateY(20px);opacity:0;transition:all 0.25s ease;
+    pointer-events:none;
+    display:flex;align-items:center;gap:10px;
+  }
+  #toast.visible{transform:translateY(0);opacity:1;}
+  #toast.success{border-color:var(--success);}
+  #toast.error{border-color:var(--danger);}
+
+  /* ===== GENERIC LIST/CARD ===== */
+  .item-row{
+    background:var(--surface);border:1px solid var(--line);border-radius:12px;
+    padding:18px 20px;margin-bottom:12px;
+    display:flex;justify-content:space-between;align-items:flex-start;gap:16px;
+  }
+  .item-row .info{flex:1;min-width:0;}
+  .item-row .title{font-family:'Space Grotesk',sans-serif;font-weight:500;font-size:15px;}
+  .item-row .meta{font-size:12px;color:var(--text-muted);margin-top:4px;}
+  .item-row .actions{display:flex;gap:8px;flex-shrink:0;}
+
+  .message-card{
+    background:var(--surface);border:1px solid var(--line);border-radius:12px;
+    padding:18px 20px;margin-bottom:12px;
+  }
+  .message-card.unread{border-color:var(--accent);}
+  .message-card .msg-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px;}
+  .message-card .msg-from{font-family:'Space Grotesk',sans-serif;font-weight:500;font-size:14.5px;}
+  .message-card .msg-email{font-size:12px;color:var(--text-muted);margin-top:2px;}
+  .message-card .msg-date{font-size:11.5px;color:var(--text-muted);white-space:nowrap;}
+  .message-card .msg-body{font-size:13.5px;color:var(--text);line-height:1.6;white-space:pre-wrap;}
+  .message-card .msg-actions{display:flex;gap:8px;margin-top:14px;}
+  .unread-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);display:inline-block;margin-right:8px;}
+
+  .add-btn{
+    background:var(--surface);border:1px dashed var(--line);border-radius:12px;
+    padding:16px;width:100%;text-align:center;color:var(--text-muted);
+    font-size:13.5px;cursor:pointer;margin-bottom:20px;
+  }
+  .add-btn:hover{border-color:var(--accent);color:var(--accent-2);}
+
+  /* ===== FORM (used in edit panels / modal) ===== */
+  .form-grid{display:grid;gap:14px;}
+  .form-grid.two-col{grid-template-columns:1fr 1fr;}
+  .field textarea{
+    width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;
+    padding:12px 14px;color:var(--text);font-size:14px;resize:vertical;min-height:80px;
+  }
+  .field select{
+    width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;
+    padding:12px 14px;color:var(--text);font-size:14px;
+  }
+  .field-checkbox{display:flex;align-items:center;gap:10px;}
+  .field-checkbox input{width:auto;}
+
+  /* ===== INLINE EDIT CARD (slide-down form for add/edit) ===== */
+  .edit-card{
+    background:var(--surface-2);border:1px solid var(--accent);border-radius:12px;
+    padding:20px;margin-bottom:20px;
+  }
+  .edit-card .form-actions{display:flex;gap:10px;margin-top:16px;}
+
+  /* ===== FILE DROP ZONE ===== */
+  .drop-zone{
+    border:1px dashed var(--line);border-radius:10px;
+    padding:24px;text-align:center;cursor:pointer;
+    font-size:13px;color:var(--text-muted);
+    transition:border-color .2s;
+  }
+  .drop-zone:hover,.drop-zone.dragover{border-color:var(--accent);color:var(--accent-2);}
+  .drop-zone input{display:none;}
+  .upload-progress{
+    height:4px;background:var(--line);border-radius:2px;margin-top:10px;overflow:hidden;display:none;
+  }
+  .upload-progress.visible{display:block;}
+  .upload-progress-bar{height:100%;background:var(--accent);width:0%;transition:width 0.2s;}
+  .file-preview{font-size:12px;color:var(--accent-2);margin-top:8px;word-break:break-all;}
+
+  /* ===== TOGGLE SWITCH ===== */
+  .toggle-row{
+    display:flex;align-items:center;justify-content:space-between;
+    background:var(--surface);border:1px solid var(--line);border-radius:12px;
+    padding:18px 20px;margin-bottom:14px;
+  }
+  .toggle-row .label-text{font-size:14px;}
+  .toggle-row .label-sub{font-size:12px;color:var(--text-muted);margin-top:3px;}
+  .switch{position:relative;width:44px;height:25px;flex-shrink:0;}
+  .switch input{opacity:0;width:0;height:0;}
+  .slider{
+    position:absolute;cursor:pointer;inset:0;
+    background:var(--line);border-radius:999px;transition:.2s;
+  }
+  .slider::before{
+    content:'';position:absolute;width:19px;height:19px;left:3px;top:3px;
+    background:var(--text);border-radius:50%;transition:.2s;
+  }
+  .switch input:checked + .slider{background:var(--accent);}
+  .switch input:checked + .slider::before{transform:translateX(19px);background:#0A0A0D;}
+  .switch:hover .slider{background:var(--text-muted);}
+  .switch:hover input:checked + .slider{background:var(--accent-2);}
+
+  .empty-state{
+    text-align:center;padding:40px 20px;color:var(--text-muted);font-size:13.5px;
+  }
+
+  @media (max-width:860px){
+    .sidebar{width:80px;padding:20px 8px;}
+    .sidebar-logo{display:none;}
+    .nav-item span.label-text-nav{display:none;}
+    .nav-item{justify-content:center;}
+    .sidebar-footer .user-email{display:none;}
+    .main-area{padding:24px 20px;}
+    .form-grid.two-col{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== LOGIN SCREEN ===== -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">anish<span>.</span>shetty <span class="mono" style="font-size:11px;color:var(--text-muted);">/ admin</span></div>
+    <div class="login-sub">Sign in to manage your portfolio content.</div>
+    <form id="loginForm">
+      <div class="field">
+        <label for="loginEmail">Email</label>
+        <input id="loginEmail" type="email" required autocomplete="username">
+      </div>
+      <div class="field">
+        <label for="loginPassword">Password</label>
+        <input id="loginPassword" type="password" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn btn-primary" id="loginBtn">Sign In</button>
+      <div class="error-msg" id="loginError"></div>
+    </form>
+  </div>
+</div>
+
+<!-- ===== APP SHELL ===== -->
+<div id="appShell">
+  <div class="sidebar">
+    <div class="sidebar-logo">anish<span>.</span>shetty</div>
+    <div class="nav-item active" data-panel="projects"><span class="dot"></span><span class="label-text-nav">Projects</span></div>
+    <div class="nav-item" data-panel="media"><span class="dot"></span><span class="label-text-nav">Media</span></div>
+    <div class="nav-item" data-panel="skills"><span class="dot"></span><span class="label-text-nav">Skills</span></div>
+    <div class="nav-item" data-panel="experience"><span class="dot"></span><span class="label-text-nav">Experience</span></div>
+    <div class="nav-item" data-panel="custom"><span class="dot"></span><span class="label-text-nav">Custom Section</span></div>
+    <div class="nav-item" data-panel="messages"><span class="dot"></span><span class="label-text-nav">Messages</span><span class="nav-badge" id="msgBadge" style="display:none;"></span></div>
+    <div class="nav-item" data-panel="settings"><span class="dot"></span><span class="label-text-nav">Settings</span></div>
+    <div class="sidebar-footer">
+      <div class="user-email" id="userEmail"></div>
+      <button class="btn btn-secondary btn-sm" id="logoutBtn" style="width:100%;">Sign Out</button>
+    </div>
+  </div>
+
+  <div class="main-area">
+
+    <!-- PROJECTS PANEL -->
+    <div class="panel active" id="panel-projects">
+      <div class="panel-header">
+        <h1 class="display">Projects</h1>
+        <p>Code projects shown as cards on the public site, with GitHub links.</p>
+      </div>
+      <div class="add-btn" id="addProjectBtn">+ Add new project</div>
+      <div id="projectEditSlot"></div>
+      <div id="projectList"></div>
+    </div>
+
+    <!-- MEDIA PANEL -->
+    <div class="panel" id="panel-media">
+      <div class="panel-header">
+        <h1 class="display">Media</h1>
+        <p>Videos, reels, and design pieces. The public site auto-arranges these based on count and orientation.</p>
+      </div>
+      <div class="add-btn" id="addMediaBtn">+ Add new media item</div>
+      <div id="mediaEditSlot"></div>
+      <div id="mediaList"></div>
+    </div>
+
+    <!-- SKILLS PANEL -->
+    <div class="panel" id="panel-skills">
+      <div class="panel-header">
+        <h1 class="display">Skills</h1>
+        <p>Grouped into three categories shown on the public site.</p>
+      </div>
+      <div class="add-btn" id="addSkillBtn">+ Add new skill</div>
+      <div id="skillEditSlot"></div>
+      <div id="skillList"></div>
+    </div>
+
+    <!-- EXPERIENCE PANEL -->
+    <div class="panel" id="panel-experience">
+      <div class="panel-header">
+        <h1 class="display">Experience & Recognition</h1>
+        <p>Work history rows and achievement pills.</p>
+      </div>
+      <div class="add-btn" id="addExpBtn">+ Add new entry</div>
+      <div id="expEditSlot"></div>
+      <div id="expList"></div>
+    </div>
+
+    <!-- CUSTOM SECTION PANEL -->
+    <div class="panel" id="panel-custom">
+      <div class="panel-header">
+        <h1 class="display">Custom Section</h1>
+        <p>A free-form grid for anything that doesn't fit the fixed categories — notices, announcements, extra content. Hidden on the public site until you turn it on and add at least one card.</p>
+      </div>
+      <div class="toggle-row" style="margin-bottom:24px;">
+        <div><div class="label-text">Show this section on the public site</div><div class="label-sub">Turns the whole section on/off</div></div>
+        <label class="switch"><input type="checkbox" id="customEnabledToggle"><span class="slider"></span></label>
+      </div>
+      <div class="form-grid two-col" style="margin-bottom:24px;">
+        <div class="field"><label>Section title</label><input type="text" id="customSectionTitle" placeholder="e.g. Notices"></div>
+        <div class="field"><label>Subtitle (optional)</label><input type="text" id="customSectionSubtitle" placeholder="Short description shown under the title"></div>
+      </div>
+      <button class="btn btn-secondary btn-sm" id="saveCustomMetaBtn" style="margin-bottom:28px;">Save Title & Toggle</button>
+
+      <div class="add-btn" id="addCustomBtn">+ Add new card</div>
+      <div id="customEditSlot"></div>
+      <div id="customList"></div>
+    </div>
+
+    <!-- MESSAGES PANEL -->
+    <div class="panel" id="panel-messages">
+      <div class="panel-header">
+        <h1 class="display">Messages</h1>
+        <p>Submissions from the public contact form.</p>
+      </div>
+      <div id="messagesList"></div>
+    </div>
+
+    <!-- SETTINGS PANEL -->
+    <div class="panel" id="panel-settings">
+      <div class="panel-header">
+        <h1 class="display">Site Settings</h1>
+        <p>Site-wide text, hero media, and toggles.</p>
+      </div>
+      <div id="settingsForm"></div>
+
+      <div style="margin-top:40px;padding-top:32px;border-top:1px solid var(--line);">
+        <h1 class="display" style="font-size:20px;margin-bottom:6px;">Social & Contact Links</h1>
+        <p style="font-size:13.5px;color:var(--text-muted);margin-bottom:20px;">Shown in the Contact section on the public site. Add any number of links.</p>
+        <div class="add-btn" id="addLinkBtn">+ Add new link</div>
+        <div id="linkEditSlot"></div>
+        <div id="linkList"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  const SUPABASE_URL = 'https://hjyexinxxdcywvinyaut.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhqeWV4aW54eGRjeXd2aW55YXV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MjY0ODgsImV4cCI6MjA5NzMwMjQ4OH0.U-VDiO1yugPoD6b3jm-C8rqdo5yC7GsPv4gJ5rDcnDE';
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const STORAGE_BUCKET = 'portfolio-media';
+
+  // pdf.js needs its worker script configured before use — handles the
+  // actual PDF parsing off the main thread.
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.worker.min.js';
+
+  // ===== TOAST =====
+  function showToast(msg, type){
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = 'visible' + (type ? ' ' + type : '');
+    clearTimeout(window._toastTimer);
+    window._toastTimer = setTimeout(function(){ el.classList.remove('visible'); }, 3000);
+  }
+
+  // ===== AUTH =====
+  async function checkSession(){
+    const { data } = await sb.auth.getSession();
+    if (data.session){
+      showApp(data.session.user);
+    } else {
+      document.getElementById('loginScreen').style.display = 'flex';
+      document.getElementById('appShell').classList.remove('visible');
+    }
+  }
+
+  function showApp(user){
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('appShell').classList.add('visible');
+    document.getElementById('userEmail').textContent = user.email;
+    initAllPanels();
+  }
+
+  document.getElementById('loginForm').addEventListener('submit', async function(e){
+    e.preventDefault();
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const btn = document.getElementById('loginBtn');
+    const errEl = document.getElementById('loginError');
+    errEl.classList.remove('visible');
+    btn.disabled = true; btn.textContent = 'Signing in...';
+
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+
+    btn.disabled = false; btn.textContent = 'Sign In';
+    if (error){
+      errEl.textContent = error.message;
+      errEl.classList.add('visible');
+      return;
+    }
+    showApp(data.user);
+  });
+
+  document.getElementById('logoutBtn').addEventListener('click', async function(){
+    await sb.auth.signOut();
+    location.reload();
+  });
+
+  // ===== SIDEBAR NAV =====
+  document.querySelectorAll('.nav-item').forEach(function(item){
+    item.addEventListener('click', function(){
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      item.classList.add('active');
+      document.getElementById('panel-' + item.getAttribute('data-panel')).classList.add('active');
+    });
+  });
+
+  function initAllPanels(){
+    initProjectsPanel();
+    initMediaPanel();
+    initSkillsPanel();
+    initExperiencePanel();
+    initCustomSectionPanel();
+    initMessagesPanel();
+    initSettingsPanel();
+    initSocialLinksPanel();
+  }
+
+  // ===== PROJECTS PANEL =====
+  function initProjectsPanel(){
+    const listEl = document.getElementById('projectList');
+    const slotEl = document.getElementById('projectEditSlot');
+
+    async function load(){
+      const { data, error } = await sb.from('projects').select('*').order('sort_order');
+      if (error){ listEl.innerHTML = '<div class="empty-state">Couldn\'t load projects.</div>'; return; }
+      if (!data || data.length === 0){ listEl.innerHTML = '<div class="empty-state">No projects yet — add one above.</div>'; return; }
+
+      listEl.innerHTML = data.map(function(p){
+        return '<div class="item-row">' +
+          '<div class="info">' +
+            '<div class="title">' + escapeHtml(p.title) + '</div>' +
+            '<div class="meta">' + escapeHtml(p.tech_stack || '') + (p.year ? ' · ' + p.year : '') + '</div>' +
+          '</div>' +
+          '<div class="actions">' +
+            '<button class="btn btn-secondary btn-sm" data-edit="' + p.id + '">Edit</button>' +
+            '<button class="btn btn-danger btn-sm" data-delete="' + p.id + '">Delete</button>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+
+      listEl.querySelectorAll('[data-edit]').forEach(function(b){
+        b.addEventListener('click', function(){
+          const item = data.find(function(p){ return p.id === b.getAttribute('data-edit'); });
+          renderForm(item);
+        });
+      });
+      listEl.querySelectorAll('[data-delete]').forEach(function(b){
+        b.addEventListener('click', function(){ handleDelete(b.getAttribute('data-delete')); });
+      });
+    }
+
+    async function handleDelete(id){
+      if (!confirm('Delete this project? This can\'t be undone.')) return;
+      const { error } = await sb.from('projects').delete().eq('id', id);
+      if (error){ showToast('Delete failed: ' + error.message, 'error'); return; }
+      showToast('Project deleted', 'success');
+      load();
+    }
+
+    function renderForm(item){
+      const isEdit = !!item;
+      item = item || { title:'', description:'', tech_stack:'', year:'', github_url:'', cover_url:'', sort_order: 0 };
+
+      slotEl.innerHTML =
+        '<div class="edit-card">' +
+          '<div class="form-grid">' +
+            '<div class="field"><label>Title</label><input type="text" id="f_title" value="' + escapeAttr(item.title) + '"></div>' +
+            '<div class="field"><label>Description</label><textarea id="f_description">' + escapeHtml(item.description) + '</textarea></div>' +
+            '<div class="form-grid two-col">' +
+              '<div class="field"><label>Tech stack (e.g. "FLUTTER · FIREBASE")</label><input type="text" id="f_tech" value="' + escapeAttr(item.tech_stack) + '"></div>' +
+              '<div class="field"><label>Year</label><input type="text" id="f_year" value="' + escapeAttr(item.year) + '"></div>' +
+            '</div>' +
+            '<div class="field"><label>GitHub URL</label><input type="text" id="f_github" value="' + escapeAttr(item.github_url) + '"></div>' +
+            '<div class="field"><label>Cover image (shown on the project card)</label>' +
+              '<div class="drop-zone" id="dz_pcover">Click or drag an image here' +
+              (item.cover_url ? '<div class="file-preview">Current: ' + item.cover_url.split('/').pop() + '</div>' : '') +
+              '<input type="file" id="f_pcoverfile" accept="image/*">' +
+              '<div class="upload-progress" id="p_pcover"><div class="upload-progress-bar"></div></div>' +
+              '</div>' +
+            '</div>' +
+            '<div class="field"><label>Sort order (lower shows first)</label><input type="number" id="f_sort" value="' + (item.sort_order || 0) + '"></div>' +
+          '</div>' +
+          '<div class="form-actions">' +
+            '<button class="btn btn-primary" id="f_save">' + (isEdit ? 'Save Changes' : 'Add Project') + '</button>' +
+            '<button class="btn btn-secondary" id="f_cancel">Cancel</button>' +
+          '</div>' +
+        '</div>';
+
+      let pendingCoverUrl = item.cover_url || '';
+      setupSingleUpload('dz_pcover', 'f_pcoverfile', 'p_pcover', function(url){ pendingCoverUrl = url; });
+
+      document.getElementById('f_cancel').addEventListener('click', function(){ slotEl.innerHTML = ''; });
+      document.getElementById('f_save').addEventListener('click', async function(){
+        const payload = {
+          title: document.getElementById('f_title').value.trim(),
+          description: document.getElementById('f_description').value.trim(),
+          tech_stack: document.getElementById('f_tech').value.trim(),
+          year: document.getElementById('f_year').value.trim(),
+          github_url: document.getElementById('f_github').value.trim(),
+          cover_url: pendingCoverUrl,
+          sort_order: parseInt(document.getElementById('f_sort').value) || 0
+        };
+        if (!payload.title){ showToast('Title is required', 'error'); return; }
+
+        const { error } = isEdit
+          ? await sb.from('projects').update(payload).eq('id', item.id)
+          : await sb.from('projects').insert(payload);
+
+        if (error){ showToast('Save failed: ' + error.message, 'error'); return; }
+        showToast(isEdit ? 'Project updated' : 'Project added', 'success');
+        slotEl.innerHTML = '';
+        load();
+      });
+    }
+
+    document.getElementById('addProjectBtn').addEventListener('click', function(){ renderForm(null); });
+    load();
+  }
+
+  // ===== shared helpers =====
+  function escapeHtml(str){
+    if (!str) return '';
+    return String(str).replace(/[&<>"']/g, function(c){
+      return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+    });
+  }
+  function escapeAttr(str){ return escapeHtml(str); }
+
+  // Shared single-file upload helper (used for cover images, main media
+  // files, hero video/photo, resume — anywhere one file goes to one column).
+  function setupSingleUpload(zoneId, inputId, progressId, onComplete){
+    const zone = document.getElementById(zoneId);
+    const input = document.getElementById(inputId);
+    const progressWrap = document.getElementById(progressId);
+    const progressBar = progressWrap.querySelector('.upload-progress-bar');
+    const MAX_BYTES = 50 * 1024 * 1024; // Supabase free-tier per-file cap
+
+    zone.addEventListener('click', function(){ input.click(); });
+    zone.addEventListener('dragover', function(e){ e.preventDefault(); zone.classList.add('dragover'); });
+    zone.addEventListener('dragleave', function(){ zone.classList.remove('dragover'); });
+    zone.addEventListener('drop', function(e){
+      e.preventDefault(); zone.classList.remove('dragover');
+      if (e.dataTransfer.files[0]) upload(e.dataTransfer.files[0]);
+    });
+    input.addEventListener('change', function(){ if (input.files[0]) upload(input.files[0]); });
+
+    function showZoneError(msg){
+      let errEl = zone.querySelector('.dz-error');
+      if (!errEl){
+        errEl = document.createElement('div');
+        errEl.className = 'dz-error';
+        errEl.style.color = 'var(--danger)';
+        errEl.style.fontSize = '12px';
+        errEl.style.marginTop = '8px';
+        zone.appendChild(errEl);
+      }
+      errEl.textContent = msg;
+    }
+    function clearZoneError(){
+      const errEl = zone.querySelector('.dz-error');
+      if (errEl) errEl.remove();
+    }
+
+    async function upload(file){
+      clearZoneError();
+      if (file.size > MAX_BYTES){
+        const mb = (file.size / (1024*1024)).toFixed(1);
+        showZoneError('File is ' + mb + 'MB — over the 50MB free-tier limit. Compress it (e.g. HandBrake for video, or export images at a smaller size) and try again.');
+        showToast('File too large — see message under the upload box', 'error');
+        return;
+      }
+
+      progressWrap.classList.add('visible');
+      progressBar.style.width = '30%';
+      const ext = file.name.split('.').pop();
+      const path = 'media/' + Date.now() + '-' + Math.random().toString(36).slice(2,8) + '.' + ext;
+
+      const { error } = await sb.storage.from(STORAGE_BUCKET).upload(path, file);
+      progressBar.style.width = '80%';
+      if (error){
+        showZoneError('Upload failed: ' + error.message);
+        showToast('Upload failed — see message under the upload box', 'error');
+        progressWrap.classList.remove('visible');
+        return;
+      }
+
+      const { data: urlData } = sb.storage.from(STORAGE_BUCKET).getPublicUrl(path);
+      progressBar.style.width = '100%';
+      onComplete(urlData.publicUrl);
+      showToast('File uploaded — click Save to finish', 'success');
+      setTimeout(function(){ progressWrap.classList.remove('visible'); progressBar.style.width='0%'; }, 600);
+    }
+  }
+
+  // ===== SKILLS PANEL =====
+  function initSkillsPanel(){
+    const listEl = document.getElementById('skillList');
+    const slotEl = document.getElementById('skillEditSlot');
+    const categoryLabels = { code: 'Code', tools: 'Tools', craft: 'Craft' };
+
+    async function load(){
+      const { data, error } = await sb.from('skills').select('*').order('category').order('sort_order');
+      if (error){ listEl.innerHTML = '<div class="empty-state">Couldn\'t load skills.</div>'; return; }
+      if (!data || data.length === 0){ listEl.innerHTML = '<div class="empty-state">No skills yet — add one above.</div>'; return; }
+
+      listEl.innerHTML = data.map(function(s){
+        return '<div class="item-row">' +
+          '<div class="info">' +
+            '<div class="title">' + escapeHtml(s.label) + '</div>' +
+            '<div class="meta">' + (categoryLabels[s.category] || s.category) + '</div>' +
+          '</div>' +
+          '<div class="actions">' +
+            '<button class="btn btn-secondary btn-sm" data-edit="' + s.id + '">Edit</button>' +
+            '<button class="btn btn-danger btn-sm" data-delete="' + s.id + '">Delete</button>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+
+      listEl.querySelectorAll('[data-edit]').forEach(function(b){
+        b.addEventListener('click', function(){
+          renderForm(data.find(function(s){ return s.id === b.getAttribute('data-edit'); }));
+        });
+      });
+      listEl.querySelectorAll('[data-delete]').forEach(function(b){
+        b.addEventListener('click', async function(){
+          if (!confirm('Delete this skill?')) return;
+          const { error } = await sb.from('skills').delete().eq('id', b.getAttribute('data-delete'));
+          if (error){ showToast('Delete failed: ' + error.message, 'error'); return; }
+          showToast('Skill deleted', 'success');
+          load();
+        });
+      });
+    }
+
+    function renderForm(item){
+      const isEdit = !!item;
+      item = item || { category: 'code', label: '', sort_order: 0 };
+
+      slotEl.innerHTML =
+        '<div class="edit-card">' +
+          '<div class="form-grid two-col">' +
+            '<div class="field"><label>Category</label>' +
+              '<select id="f_cat">' +
+                '<option value="code"' + (item.category==='code'?' selected':'') + '>Code</option>' +
+                '<option value="tools"' + (item.category==='tools'?' selected':'') + '>Tools</option>' +
+                '<option value="craft"' + (item.category==='craft'?' selected':'') + '>Craft</option>' +
+              '</select>' +
+            '</div>' +
+            '<div class="field"><label>Skill label</label><input type="text" id="f_label" value="' + escapeAttr(item.label) + '"></div>' +
+          '</div>' +
+          '<div class="form-actions">' +
+            '<button class="btn btn-primary" id="f_save">' + (isEdit ? 'Save Changes' : 'Add Skill') + '</button>' +
+            '<button class="btn btn-secondary" id="f_cancel">Cancel</button>' +
+          '</div>' +
+        '</div>';
+
+      document.getElementById('f_cancel').addEventListener('click', function(){ slotEl.innerHTML = ''; });
+      document.getElementById('f_save').addEventListener('click', async function(){
+        const payload = {
+          category: document.getElementById('f_cat').value,
+          label: document.getElementById('f_label').value.trim()
+        };
+        if (!payload.label){ showToast('Label is required', 'error'); return; }
+
+        const { error } = isEdit
+          ? await sb.from('skills').update(payload).eq('id', item.id)
+          : await sb.from('skills').insert(payload);
+
+        if (error){ showToast('Save failed: ' + error.message, 'error'); return; }
+        showToast(isEdit ? 'Skill updated' : 'Skill added', 'success');
+        slotEl.innerHTML = '';
+        load();
+      });
+    }
+
+    document.getElementById('addSkillBtn').addEventListener('click', function(){ renderForm(null); });
+    load();
+  }
+
+  // ===== EXPERIENCE PANEL =====
+  function initExperiencePanel(){
+    const listEl = document.getElementById('expList');
+    const slotEl = document.getElementById('expEditSlot');
+
+    async function load(){
+      const { data, error } = await sb.from('experience').select('*').order('sort_order');
+      if (error){ listEl.innerHTML = '<div class="empty-state">Couldn\'t load entries.</div>'; return; }
+      if (!data || data.length === 0){ listEl.innerHTML = '<div class="empty-state">No entries yet — add one above.</div>'; return; }
+
+      listEl.innerHTML = data.map(function(e){
+        return '<div class="item-row">' +
+          '<div class="info">' +
+            '<div class="title">' + escapeHtml(e.role) + (e.is_achievement ? ' <span class="mono" style="color:var(--accent-2);font-size:11px;">· achievement</span>' : '') + '</div>' +
+            '<div class="meta">' + escapeHtml(e.organization || '') + (e.organization && e.period ? ' · ' : '') + escapeHtml(e.period || '') + '</div>' +
+          '</div>' +
+          '<div class="actions">' +
+            '<button class="btn btn-secondary btn-sm" data-edit="' + e.id + '">Edit</button>' +
+            '<button class="btn btn-danger btn-sm" data-delete="' + e.id + '">Delete</button>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+
+      listEl.querySelectorAll('[data-edit]').forEach(function(b){
+        b.addEventListener('click', function(){
+          renderForm(data.find(function(e){ return e.id === b.getAttribute('data-edit'); }));
+        });
+      });
+      listEl.querySelectorAll('[data-delete]').forEach(function(b){
+        b.addEventListener('click', async function(){
+          if (!confirm('Delete this entry?')) return;
+          const { error } = await sb.from('experience').delete().eq('id', b.getAttribute('data-delete'));
+          if (error){ showToast('Delete failed: ' + error.message, 'error'); return; }
+          showToast('Entry deleted', 'success');
+          load();
+        });
+      });
+    }
+
+    function renderForm(item){
+      const isEdit = !!item;
+      item = item || { period:'', role:'', organization:'', description:'', is_achievement:false, sort_order:0 };
+
+      slotEl.innerHTML =
+        '<div class="edit-card">' +
+          '<div class="form-grid">' +
+            '<div class="field"><label>Role / Title</label><input type="text" id="f_role" value="' + escapeAttr(item.role) + '"></div>' +
+            '<div class="form-grid two-col">' +
+              '<div class="field"><label>Period (e.g. "2025 — Present")</label><input type="text" id="f_period" value="' + escapeAttr(item.period) + '"></div>' +
+              '<div class="field"><label>Organization</label><input type="text" id="f_org" value="' + escapeAttr(item.organization) + '"></div>' +
+            '</div>' +
+            '<div class="field"><label>Description (optional)</label><textarea id="f_desc">' + escapeHtml(item.description) + '</textarea></div>' +
+            '<div class="field field-checkbox"><input type="checkbox" id="f_achv"' + (item.is_achievement ? ' checked' : '') + '><label for="f_achv" style="margin:0;">Show as achievement pill instead of full row</label></div>' +
+            '<div class="field"><label>Sort order</label><input type="number" id="f_sort" value="' + (item.sort_order||0) + '"></div>' +
+          '</div>' +
+          '<div class="form-actions">' +
+            '<button class="btn btn-primary" id="f_save">' + (isEdit ? 'Save Changes' : 'Add Entry') + '</button>' +
+            '<button class="btn btn-secondary" id="f_cancel">Cancel</button>' +
+          '</div>' +
+        '</div>';
+
+      document.getElementById('f_cancel').addEventListener('click', function(){ slotEl.innerHTML = ''; });
+      document.getElementById('f_save').addEventListener('click', async function(){
+        const payload = {
+          role: document.getElementById('f_role').value.trim(),
+          period: document.getElementById('f_period').value.trim(),
+          organization: document.getElementById('f_org').value.trim(),
+          description: document.getElementById('f_desc').value.trim(),
+          is_achievement: document.getElementById('f_achv').checked,
+          sort_order: parseInt(document.getElementById('f_sort').value) || 0
+        };
+        if (!payload.role){ showToast('Role/title is required', 'error'); return; }
+
+        const { error } = isEdit
+          ? await sb.from('experience').update(payload).eq('id', item.id)
+          : await sb.from('experience').insert(payload);
+
+        if (error){ showToast('Save failed: ' + error.message, 'error'); return; }
+        showToast(isEdit ? 'Entry updated' : 'Entry added', 'success');
+        slotEl.innerHTML = '';
+        load();
+      });
+    }
+
+    document.getElementById('addExpBtn').addEventListener('click', function(){ renderForm(null); });
+    load();
+  }
+
+  // ===== CUSTOM SECTION PANEL =====
+  function initCustomSectionPanel(){
+    const listEl = document.getElementById('customList');
+    const slotEl = document.getElementById('customEditSlot');
+
+    async function loadMeta(){
+      const { data, error } = await sb.from('site_settings').select('*').eq('id', 1).single();
+      if (error || !data) return;
+      document.getElementById('customEnabledToggle').checked = !!data.custom_section_enabled;
+      document.getElementById('customSectionTitle').value = data.custom_section_title || '';
+      document.getElementById('customSectionSubtitle').value = data.custom_section_subtitle || '';
+    }
+
+    document.getElementById('saveCustomMetaBtn').addEventListener('click', async function(){
+      const payload = {
+        custom_section_enabled: document.getElementById('customEnabledToggle').checked,
+        custom_section_title: document.getElementById('customSectionTitle').value.trim(),
+        custom_section_subtitle: document.getElementById('customSectionSubtitle').value.trim()
+      };
+      console.info('Saving custom section meta —', payload);
+      const { data: updateResult, error } = await sb.from('site_settings').update(payload).eq('id', 1).select();
+      if (error){ console.warn('Save failed —', error.message); showToast('Save failed: ' + error.message, 'error'); return; }
+      console.info('Save result from database —', updateResult);
+      showToast('Saved', 'success');
+    });
+
+    async function load(){
+      const { data, error } = await sb.from('custom_section_items').select('*').order('sort_order');
+      if (error){ listEl.innerHTML = '<div class="empty-state">Couldn\'t load cards. Run the latest migration if you haven\'t yet.</div>'; return; }
+      if (!data || data.length === 0){ listEl.innerHTML = '<div class="empty-state">No cards yet — add one above.</div>'; return; }
+
+      listEl.innerHTML = data.map(function(c){
+        return '<div class="item-row">' +
+          '<div class="info">' +
+            '<div class="title">' + escapeHtml(c.title) + '</div>' +
+            '<div class="meta">' + escapeHtml((c.description || '').slice(0, 80)) + '</div>' +
+          '</div>' +
+          '<div class="actions">' +
+            '<button class="btn btn-secondary btn-sm" data-edit="' + c.id + '">Edit</button>' +
+            '<button class="btn btn-danger btn-sm" data-delete="' + c.id + '">Delete</button>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+
+      listEl.querySelectorAll('[data-edit]').forEach(function(b){
+        b.addEventListener('click', function(){
+          renderForm(data.find(function(c){ return c.id === b.getAttribute('data-edit'); }));
+        });
+      });
+      listEl.querySelectorAll('[data-delete]').forEach(function(b){
+        b.addEventListener('click', async function(){
+          if (!confirm('Delete this card?')) return;
+          const { error } = await sb.from('custom_section_items').delete().eq('id', b.getAttribute('data-delete'));
+          if (error){ showToast('Delete failed: ' + error.message, 'error'); return; }
+          showToast('Card deleted', 'success');
+          load();
+        });
+      });
+    }
+
+    function renderForm(item){
+      const isEdit = !!item;
+      item = item || { title:'', description:'', cover_url:'', media_url:'', media_type:'image', link_label:'', link_url:'', sort_order:0 };
+
+      slotEl.innerHTML =
+        '<div class="edit-card">' +
+          '<div class="form-grid">' +
+            '<div class="field"><label>Title</label><input type="text" id="f_title" value="' + escapeAttr(item.title) + '"></div>' +
+            '<div class="field"><label>Description</label><textarea id="f_desc">' + escapeHtml(item.description) + '</textarea></div>' +
+
+            '<div class="field"><label>Cover image (always shown as the card thumbnail)</label>' +
+              '<div class="drop-zone" id="dz_ccover">Click or drag an image here' +
+              (item.cover_url ? '<div class="file-preview">Current: ' + item.cover_url.split('/').pop() + '</div>' : '') +
+              '<input type="file" id="f_ccoverfile" accept="image/*">' +
+              '<div class="upload-progress" id="p_ccover"><div class="upload-progress-bar"></div></div>' +
+              '</div>' +
+            '</div>' +
+
+            '<div class="field field-checkbox"><input type="checkbox" id="f_hasvideo"' + (item.media_type === 'video' ? ' checked' : '') + '><label for="f_hasvideo" style="margin:0;">This card also has a video (opens in the popup when clicked)</label></div>' +
+            '<div id="cvideoWrap" style="display:' + (item.media_type === 'video' ? 'block' : 'none') + ';">' +
+              '<div class="field"><label>Video file</label>' +
+                '<div class="drop-zone" id="dz_cvideo">Click or drag a video file here' +
+                (item.media_url ? '<div class="file-preview">Current: ' + item.media_url.split('/').pop() + '</div>' : '') +
+                '<input type="file" id="f_cvideofile" accept="video/*">' +
+                '<div class="upload-progress" id="p_cvideo"><div class="upload-progress-bar"></div></div>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+
+            '<div class="form-grid two-col">' +
+              '<div class="field"><label>Button label (optional)</label><input type="text" id="f_linklabel" value="' + escapeAttr(item.link_label) + '" placeholder="e.g. Read more"></div>' +
+              '<div class="field"><label>Button URL (optional)</label><input type="text" id="f_linkurl" value="' + escapeAttr(item.link_url) + '"></div>' +
+            '</div>' +
+            '<div class="field"><label>Sort order</label><input type="number" id="f_sort" value="' + (item.sort_order||0) + '"></div>' +
+          '</div>' +
+          '<div class="form-actions">' +
+            '<button class="btn btn-primary" id="f_save">' + (isEdit ? 'Save Changes' : 'Add Card') + '</button>' +
+            '<button class="btn btn-secondary" id="f_cancel">Cancel</button>' +
+          '</div>' +
+        '</div>';
+
+      let pendingCoverUrl = item.cover_url || '';
+      let pendingMediaUrl = item.media_url || '';
+      setupSingleUpload('dz_ccover', 'f_ccoverfile', 'p_ccover', function(url){ pendingCoverUrl = url; });
+      setupSingleUpload('dz_cvideo', 'f_cvideofile', 'p_cvideo', function(url){ pendingMediaUrl = url; });
+
+      document.getElementById('f_hasvideo').addEventListener('change', function(e){
+        document.getElementById('cvideoWrap').style.display = e.target.checked ? 'block' : 'none';
+      });
+
+      document.getElementById('f_cancel').addEventListener('click', function(){ slotEl.innerHTML = ''; });
+      document.getElementById('f_save').addEventListener('click', async function(){
+        const hasVideo = document.getElementById('f_hasvideo').checked;
+        const payload = {
+          title: document.getElementById('f_title').value.trim(),
+          description: document.getElementById('f_desc').value.trim(),
+          cover_url: pendingCoverUrl,
+          media_url: hasVideo ? pendingMediaUrl : null,
+          media_type: hasVideo ? 'video' : 'image',
+          link_label: document.getElementById('f_linklabel').value.trim(),
+          link_url: document.getElementById('f_linkurl').value.trim(),
+          sort_order: parseInt(document.getElementById('f_sort').value) || 0
+        };
+        if (!payload.title){ showToast('Title is required', 'error'); return; }
+
+        const { error } = isEdit
+          ? await sb.from('custom_section_items').update(payload).eq('id', item.id)
+          : await sb.from('custom_section_items').insert(payload);
+
+        if (error){ showToast('Save failed: ' + error.message, 'error'); return; }
+        showToast(isEdit ? 'Card updated' : 'Card added', 'success');
+        slotEl.innerHTML = '';
+        load();
+      });
+    }
+
+    document.getElementById('addCustomBtn').addEventListener('click', function(){ renderForm(null); });
+    loadMeta();
+    load();
+  }
+
+  // ===== MESSAGES PANEL =====
+  function initMessagesPanel(){
+    const listEl = document.getElementById('messagesList');
+    const badge = document.getElementById('msgBadge');
+
+    function formatDate(iso){
+      const d = new Date(iso);
+      return d.toLocaleDateString(undefined, { day:'numeric', month:'short', year:'numeric' }) +
+        ' · ' + d.toLocaleTimeString(undefined, { hour:'2-digit', minute:'2-digit' });
+    }
+
+    async function load(){
+      const { data, error } = await sb.from('contact_messages').select('*').order('created_at', { ascending: false });
+      if (error){ listEl.innerHTML = '<div class="empty-state">Couldn\'t load messages. Run the latest migration if you haven\'t yet.</div>'; badge.style.display = 'none'; return; }
+      if (!data || data.length === 0){ listEl.innerHTML = '<div class="empty-state">No messages yet.</div>'; badge.style.display = 'none'; return; }
+
+      const unreadCount = data.filter(function(m){ return !m.is_read; }).length;
+      if (unreadCount > 0){ badge.textContent = unreadCount; badge.style.display = 'inline-block'; }
+      else { badge.style.display = 'none'; }
+
+      listEl.innerHTML = data.map(function(m){
+        return '<div class="message-card' + (m.is_read ? '' : ' unread') + '">' +
+          '<div class="msg-top">' +
+            '<div>' +
+              '<div class="msg-from">' + (m.is_read ? '' : '<span class="unread-dot"></span>') + escapeHtml(m.name) + '</div>' +
+              '<div class="msg-email">' + escapeHtml(m.email) + '</div>' +
+            '</div>' +
+            '<div class="msg-date mono">' + formatDate(m.created_at) + '</div>' +
+          '</div>' +
+          '<div class="msg-body">' + escapeHtml(m.message) + '</div>' +
+          '<div class="msg-actions">' +
+            (m.is_read ? '' : '<button class="btn btn-secondary btn-sm" data-read="' + m.id + '">Mark as read</button>') +
+            '<a class="btn btn-secondary btn-sm" href="mailto:' + escapeAttr(m.email) + '">Reply by email</a>' +
+            '<button class="btn btn-danger btn-sm" data-delete="' + m.id + '">Delete</button>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+
+      listEl.querySelectorAll('[data-read]').forEach(function(b){
+        b.addEventListener('click', async function(){
+          const { error } = await sb.from('contact_messages').update({ is_read: true }).eq('id', b.getAttribute('data-read'));
+          if (error){ showToast('Failed: ' + error.message, 'error'); return; }
+          load();
+        });
+      });
+      listEl.querySelectorAll('[data-delete]').forEach(function(b){
+        b.addEventListener('click', async function(){
+          if (!confirm('Delete this message?')) return;
+          const { error } = await sb.from('contact_messages').delete().eq('id', b.getAttribute('data-delete'));
+          if (error){ showToast('Delete failed: ' + error.message, 'error'); return; }
+          showToast('Message deleted', 'success');
+          load();
+        });
+      });
+    }
+
+    load();
+  }
+
+  // ===== SETTINGS PANEL =====
+  function initSettingsPanel(){
+    const formEl = document.getElementById('settingsForm');
+
+    // (section key, default label, default heading) — drives both the form
+    // fields and the save payload below, one place to add a future section.
+    const SECTION_HEADINGS = [
+      { key: 'about', name: 'About' },
+      { key: 'skills', name: 'Skills' },
+      { key: 'work', name: 'Projects' },
+      { key: 'video', name: 'Videography' },
+      { key: 'design', name: 'Graphic Design' },
+      { key: 'experience', name: 'Experience' },
+      { key: 'contact', name: 'Contact' }
+    ];
+
+    async function load(){
+      const { data, error } = await sb.from('site_settings').select('*').eq('id', 1).single();
+      if (error || !data){ formEl.innerHTML = '<div class="empty-state">Couldn\'t load settings.</div>'; return; }
+
+      const headingsHtml = SECTION_HEADINGS.map(function(s){
+        return '<div class="form-grid two-col" style="margin-bottom:10px;">' +
+          '<div class="field"><label>' + s.name + ' — label (small text above heading)</label><input type="text" id="h_' + s.key + '_label" value="' + escapeAttr(data[s.key + '_label']) + '"></div>' +
+          '<div class="field"><label>' + s.name + ' — heading</label><input type="text" id="h_' + s.key + '_heading" value="' + escapeAttr(data[s.key + '_heading']) + '"></div>' +
+        '</div>';
+      }).join('');
+
+      formEl.innerHTML =
+        '<div class="toggle-row">' +
+          '<div><div class="label-text">Contact form</div><div class="label-sub">Turn the public contact form on or off</div></div>' +
+          '<label class="switch"><input type="checkbox" id="s_contact"' + (data.contact_form_enabled ? ' checked' : '') + '><span class="slider"></span></label>' +
+        '</div>' +
+        '<div class="field"><label>Hero tagline</label><textarea id="s_tagline">' + escapeHtml(data.hero_tagline) + '</textarea></div>' +
+        '<div class="field"><label>About / summary text</label><textarea id="s_summary" style="min-height:120px;">' + escapeHtml(data.summary_text) + '</textarea></div>' +
+
+        '<div class="field"><label>Hero intro video (plays once, then settles on photo)</label>' +
+          '<div class="drop-zone" id="dz_herovideo">Click or drag a video file here' +
+          (data.hero_video_url ? '<div class="file-preview">Current: ' + data.hero_video_url.split('/').pop() + '</div>' : '') +
+          '<input type="file" id="f_herovideo" accept="video/*">' +
+          '<div class="upload-progress" id="p_herovideo"><div class="upload-progress-bar"></div></div>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="field"><label>Hero still photo (shown after the video finishes)</label>' +
+          '<div class="drop-zone" id="dz_herostill">Click or drag an image file here' +
+          (data.hero_still_url ? '<div class="file-preview">Current: ' + data.hero_still_url.split('/').pop() + '</div>' : '') +
+          '<input type="file" id="f_herostill" accept="image/*">' +
+          '<div class="upload-progress" id="p_herostill"><div class="upload-progress-bar"></div></div>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="field"><label>Resume / CV (PDF — powers the "Resume" button on the public site)</label>' +
+          '<div class="drop-zone" id="dz_resume">Click or drag a PDF file here' +
+          (data.resume_url ? '<div class="file-preview">Current: ' + data.resume_url.split('/').pop() + '</div>' : '') +
+          '<input type="file" id="f_resume" accept="application/pdf">' +
+          '<div class="upload-progress" id="p_resume"><div class="upload-progress-bar"></div></div>' +
+          '</div>' +
+        '</div>' +
+
+        '<button class="btn btn-primary" id="s_save" style="margin-top:8px;">Save Settings</button>' +
+
+        '<div style="margin-top:36px;padding-top:24px;border-top:1px solid var(--line);">' +
+          '<h1 class="display" style="font-size:18px;margin-bottom:4px;">Section Headings</h1>' +
+          '<p style="font-size:13px;color:var(--text-muted);margin-bottom:18px;">Edit the small label and heading shown at the top of each section on the public site.</p>' +
+          headingsHtml +
+          '<button class="btn btn-primary" id="h_save" style="margin-top:8px;">Save Headings</button>' +
+        '</div>';
+
+      setupDropZone('dz_herovideo', 'f_herovideo', 'p_herovideo', 'hero_video_url');
+      setupDropZone('dz_herostill', 'f_herostill', 'p_herostill', 'hero_still_url');
+      setupDropZone('dz_resume', 'f_resume', 'p_resume', 'resume_url');
+
+      document.getElementById('s_save').addEventListener('click', async function(){
+        const payload = {
+          contact_form_enabled: document.getElementById('s_contact').checked,
+          hero_tagline: document.getElementById('s_tagline').value.trim(),
+          summary_text: document.getElementById('s_summary').value.trim()
+        };
+        const { error } = await sb.from('site_settings').update(payload).eq('id', 1);
+        if (error){ showToast('Save failed: ' + error.message, 'error'); return; }
+        showToast('Settings saved', 'success');
+      });
+
+      document.getElementById('h_save').addEventListener('click', async function(){
+        const payload = {};
+        SECTION_HEADINGS.forEach(function(s){
+          payload[s.key + '_label'] = document.getElementById('h_' + s.key + '_label').value.trim();
+          payload[s.key + '_heading'] = document.getElementById('h_' + s.key + '_heading').value.trim();
+        });
+        const { error } = await sb.from('site_settings').update(payload).eq('id', 1);
+        if (error){ showToast('Save failed: ' + error.message, 'error'); return; }
+        showToast('Headings saved', 'success');
+      });
+    }
+
+    function setupDropZone(zoneId, inputId, progressId, dbColumn){
+      const zone = document.getElementById(zoneId);
+      const input = document.getElementById(inputId);
+      const progressWrap = document.getElementById(progressId);
+      const progressBar = progressWrap.querySelector('.upload-progress-bar');
+
+      zone.addEventListener('click', function(){ input.click(); });
+      zone.addEventListener('dragover', function(e){ e.preventDefault(); zone.classList.add('dragover'); });
+      zone.addEventListener('dragleave', function(){ zone.classList.remove('dragover'); });
+      zone.addEventListener('drop', function(e){
+        e.preventDefault(); zone.classList.remove('dragover');
+        if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+      });
+      input.addEventListener('change', function(){
+        if (input.files[0]) handleFile(input.files[0]);
+      });
+
+      async function handleFile(file){
+        progressWrap.classList.add('visible');
+        progressBar.style.width = '30%';
+
+        const ext = file.name.split('.').pop();
+        const path = 'settings/' + dbColumn + '-' + Date.now() + '.' + ext;
+
+        const { error: uploadError } = await sb.storage.from(STORAGE_BUCKET).upload(path, file, { upsert: true });
+        progressBar.style.width = '70%';
+        if (uploadError){ showToast('Upload failed: ' + uploadError.message, 'error'); progressWrap.classList.remove('visible'); return; }
+
+        const { data: urlData } = sb.storage.from(STORAGE_BUCKET).getPublicUrl(path);
+        const publicUrl = urlData.publicUrl;
+
+        const payload = {}; payload[dbColumn] = publicUrl;
+        const { error: dbError } = await sb.from('site_settings').update(payload).eq('id', 1);
+        progressBar.style.width = '100%';
+
+        if (dbError){ showToast('Save failed: ' + dbError.message, 'error'); }
+        else { showToast('Uploaded successfully', 'success'); }
+
+        setTimeout(function(){ progressWrap.classList.remove('visible'); progressBar.style.width = '0%'; load(); }, 600);
+      }
+    }
+
+    load();
+  }
+
+  // ===== SOCIAL LINKS PANEL =====
+  const ICON_OPTIONS = ['link', 'github', 'instagram', 'linkedin', 'youtube', 'behance', 'twitter'];
+
+  function initSocialLinksPanel(){
+    const listEl = document.getElementById('linkList');
+    const slotEl = document.getElementById('linkEditSlot');
+
+    async function load(){
+      const { data, error } = await sb.from('social_links').select('*').order('sort_order');
+      if (error){ listEl.innerHTML = '<div class="empty-state">Couldn\'t load links. Run the social_links migration if you haven\'t yet.</div>'; return; }
+      if (!data || data.length === 0){ listEl.innerHTML = '<div class="empty-state">No links yet — add one above.</div>'; return; }
+
+      listEl.innerHTML = data.map(function(l){
+        return '<div class="item-row">' +
+          '<div class="info">' +
+            '<div class="title">' + escapeHtml(l.label) + ' <span class="mono" style="color:var(--text-muted);font-size:11px;">[' + l.icon + ']</span></div>' +
+            '<div class="meta">' + escapeHtml(l.url) + '</div>' +
+          '</div>' +
+          '<div class="actions">' +
+            '<button class="btn btn-secondary btn-sm" data-edit="' + l.id + '">Edit</button>' +
+            '<button class="btn btn-danger btn-sm" data-delete="' + l.id + '">Delete</button>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+
+      listEl.querySelectorAll('[data-edit]').forEach(function(b){
+        b.addEventListener('click', function(){
+          renderForm(data.find(function(l){ return l.id === b.getAttribute('data-edit'); }));
+        });
+      });
+      listEl.querySelectorAll('[data-delete]').forEach(function(b){
+        b.addEventListener('click', async function(){
+          if (!confirm('Delete this link?')) return;
+          const { error } = await sb.from('social_links').delete().eq('id', b.getAttribute('data-delete'));
+          if (error){ showToast('Delete failed: ' + error.message, 'error'); return; }
+          showToast('Link deleted', 'success');
+          load();
+        });
+      });
+    }
+
+    function renderForm(item){
+      const isEdit = !!item;
+      item = item || { label:'', url:'', icon:'link', sort_order:0 };
+
+      slotEl.innerHTML =
+        '<div class="edit-card">' +
+          '<div class="form-grid two-col">' +
+            '<div class="field"><label>Label</label><input type="text" id="f_label" value="' + escapeAttr(item.label) + '" placeholder="e.g. Instagram"></div>' +
+            '<div class="field"><label>Icon</label><select id="f_icon">' +
+              ICON_OPTIONS.map(function(opt){ return '<option value="' + opt + '"' + (item.icon===opt?' selected':'') + '>' + opt + '</option>'; }).join('') +
+            '</select></div>' +
+          '</div>' +
+          '<div class="field"><label>URL</label><input type="text" id="f_url" value="' + escapeAttr(item.url) + '" placeholder="https://..."></div>' +
+          '<div class="field"><label>Sort order</label><input type="number" id="f_sort" value="' + (item.sort_order||0) + '"></div>' +
+          '<div class="form-actions">' +
+            '<button class="btn btn-primary" id="f_save">' + (isEdit ? 'Save Changes' : 'Add Link') + '</button>' +
+            '<button class="btn btn-secondary" id="f_cancel">Cancel</button>' +
+          '</div>' +
+        '</div>';
+
+      document.getElementById('f_cancel').addEventListener('click', function(){ slotEl.innerHTML = ''; });
+      document.getElementById('f_save').addEventListener('click', async function(){
+        const payload = {
+          label: document.getElementById('f_label').value.trim(),
+          url: document.getElementById('f_url').value.trim(),
+          icon: document.getElementById('f_icon').value,
+          sort_order: parseInt(document.getElementById('f_sort').value) || 0
+        };
+        if (!payload.label || !payload.url){ showToast('Label and URL are both required', 'error'); return; }
+
+        const { error } = isEdit
+          ? await sb.from('social_links').update(payload).eq('id', item.id)
+          : await sb.from('social_links').insert(payload);
+
+        if (error){ showToast('Save failed: ' + error.message, 'error'); return; }
+        showToast(isEdit ? 'Link updated' : 'Link added', 'success');
+        slotEl.innerHTML = '';
+        load();
+      });
+    }
+
+    document.getElementById('addLinkBtn').addEventListener('click', function(){ renderForm(null); });
+    load();
+  }
+
+  // ===== MEDIA PANEL =====
+  function initMediaPanel(){
+    const listEl = document.getElementById('mediaList');
+    const slotEl = document.getElementById('mediaEditSlot');
+
+    async function load(){
+      const { data, error } = await sb.from('media_items').select('*').order('sort_order');
+      if (error){ listEl.innerHTML = '<div class="empty-state">Couldn\'t load media.</div>'; return; }
+      if (!data || data.length === 0){ listEl.innerHTML = '<div class="empty-state">No media yet — add a video or design piece above.</div>'; return; }
+
+      listEl.innerHTML = data.map(function(m){
+        return '<div class="item-row">' +
+          '<div class="info">' +
+            '<div class="title">' + escapeHtml(m.title) + '</div>' +
+            '<div class="meta">' + m.category + ' · ' + m.orientation + ' · ' + m.media_type + (m.is_multipage ? ' · multi-page' : '') + '</div>' +
+          '</div>' +
+          '<div class="actions">' +
+            '<button class="btn btn-secondary btn-sm" data-edit="' + m.id + '">Edit</button>' +
+            '<button class="btn btn-danger btn-sm" data-delete="' + m.id + '">Delete</button>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+
+      listEl.querySelectorAll('[data-edit]').forEach(function(b){
+        b.addEventListener('click', function(){
+          renderForm(data.find(function(m){ return m.id === b.getAttribute('data-edit'); }));
+        });
+      });
+      listEl.querySelectorAll('[data-delete]').forEach(function(b){
+        b.addEventListener('click', async function(){
+          if (!confirm('Delete this media item?')) return;
+          const { error } = await sb.from('media_items').delete().eq('id', b.getAttribute('data-delete'));
+          if (error){ showToast('Delete failed: ' + error.message, 'error'); return; }
+          showToast('Media deleted', 'success');
+          load();
+        });
+      });
+    }
+
+    function renderForm(item){
+      const isEdit = !!item;
+      item = item || {
+        category:'video', title:'', description:'', tag_label:'', meta:'',
+        orientation:'landscape', media_type:'video', media_url:'', cover_url:'',
+        is_multipage:false, page_urls:[], external_url:'', sort_order:0
+      };
+      let pendingPageUrls = item.page_urls ? item.page_urls.slice() : [];
+
+      slotEl.innerHTML =
+        '<div class="edit-card">' +
+          '<div class="form-grid">' +
+            '<div class="form-grid two-col">' +
+              '<div class="field"><label>Category</label>' +
+                '<select id="f_category">' +
+                  '<option value="video"' + (item.category==='video'?' selected':'') + '>Video</option>' +
+                  '<option value="design"' + (item.category==='design'?' selected':'') + '>Design</option>' +
+                '</select>' +
+              '</div>' +
+              '<div class="field"><label>Orientation</label>' +
+                '<select id="f_orientation">' +
+                  '<option value="landscape"' + (item.orientation==='landscape'?' selected':'') + '>Landscape</option>' +
+                  '<option value="portrait"' + (item.orientation==='portrait'?' selected':'') + '>Portrait (9:16 reel)</option>' +
+                '</select>' +
+              '</div>' +
+            '</div>' +
+            '<div class="field"><label>Title</label><input type="text" id="f_title" value="' + escapeAttr(item.title) + '"></div>' +
+            '<div class="field"><label>Short tag label (shown on the grid tile)</label><input type="text" id="f_tag" value="' + escapeAttr(item.tag_label) + '" placeholder="e.g. aftermovie · techfest"></div>' +
+            '<div class="field"><label>Meta line (shown in detail popup)</label><input type="text" id="f_meta" value="' + escapeAttr(item.meta) + '" placeholder="e.g. LANDSCAPE · PREMIERE PRO · 2025"></div>' +
+            '<div class="field"><label>Description</label><textarea id="f_desc">' + escapeHtml(item.description) + '</textarea></div>' +
+            '<div class="field"><label>External link (optional — published post, live site, etc.)</label><input type="text" id="f_extlink" value="' + escapeAttr(item.external_url) + '"></div>' +
+
+            '<div class="field"><label>Cover / thumbnail image (shown in the grid before opening)</label>' +
+              '<div class="drop-zone" id="dz_cover">Click or drag an image here' +
+              (item.cover_url ? '<div class="file-preview">Current: ' + item.cover_url.split('/').pop() + '</div>' : '') +
+              '<input type="file" id="f_coverfile" accept="image/*">' +
+              '<div class="upload-progress" id="p_cover"><div class="upload-progress-bar"></div></div>' +
+              '</div>' +
+            '</div>' +
+
+            '<div class="field field-checkbox"><input type="checkbox" id="f_multipage"' + (item.is_multipage ? ' checked' : '') + '><label for="f_multipage" style="margin:0;">Multi-page design (opens as a flipbook)</label></div>' +
+
+            '<div id="singleUploadWrap" style="display:' + (item.is_multipage ? 'none' : 'block') + ';">' +
+              '<div class="field"><label id="mainFileLabel">Upload file (' + (item.category==='video' ? 'video' : 'image') + ')</label>' +
+                '<div class="drop-zone" id="dz_main">Click or drag a file here' +
+                (item.media_url ? '<div class="file-preview">Current: ' + item.media_url.split('/').pop() + '</div>' : '') +
+                '<input type="file" id="f_mainfile" accept="' + (item.category==='video' ? 'video/*' : 'image/*') + '">' +
+                '<div class="upload-progress" id="p_main"><div class="upload-progress-bar"></div></div>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+
+            '<div id="multiUploadWrap" style="display:' + (item.is_multipage ? 'block' : 'none') + ';">' +
+              '<div class="field"><label>Upload a PDF (auto-converts each page to an image) or select multiple images directly</label>' +
+                '<div class="drop-zone" id="dz_pages">Click or drag a PDF, or multiple images, here' +
+                '<input type="file" id="f_pagefiles" accept="image/*,application/pdf" multiple>' +
+                '<div class="upload-progress" id="p_pages"><div class="upload-progress-bar"></div></div>' +
+                '<div class="file-preview" id="pagesPreview">' + pendingPageUrls.length + ' page(s) uploaded</div>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+
+            '<div class="field"><label>Sort order</label><input type="number" id="f_sort" value="' + (item.sort_order||0) + '"></div>' +
+          '</div>' +
+          '<div class="form-actions">' +
+            '<button class="btn btn-primary" id="f_save">' + (isEdit ? 'Save Changes' : 'Add Media Item') + '</button>' +
+            '<button class="btn btn-secondary" id="f_cancel">Cancel</button>' +
+          '</div>' +
+        '</div>';
+
+      let pendingMediaUrl = item.media_url || '';
+      let pendingCoverUrl = item.cover_url || '';
+
+      // BUG FIX: switching the Category dropdown used to do nothing — the
+      // upload input kept whatever accept="" it was rendered with, which
+      // silently blocked image/PDF files when category was changed to
+      // "Design" after the form had already rendered as "Video".
+      document.getElementById('f_category').addEventListener('change', function(e){
+        const isVideo = e.target.value === 'video';
+        document.getElementById('f_mainfile').setAttribute('accept', isVideo ? 'video/*' : 'image/*');
+        document.getElementById('mainFileLabel').textContent = 'Upload file (' + (isVideo ? 'video' : 'image') + ')';
+      });
+
+      document.getElementById('f_multipage').addEventListener('change', function(e){
+        document.getElementById('singleUploadWrap').style.display = e.target.checked ? 'none' : 'block';
+        document.getElementById('multiUploadWrap').style.display = e.target.checked ? 'block' : 'none';
+      });
+
+      // single file upload (video or single image)
+      setupSingleUpload('dz_main', 'f_mainfile', 'p_main', function(url){ pendingMediaUrl = url; });
+
+      // cover/thumbnail image (always an image, regardless of category)
+      setupSingleUpload('dz_cover', 'f_coverfile', 'p_cover', function(url){ pendingCoverUrl = url; });
+
+      // multi-page upload
+      setupMultiUpload('dz_pages', 'f_pagefiles', 'p_pages', function(urls){
+        pendingPageUrls = pendingPageUrls.concat(urls);
+        document.getElementById('pagesPreview').textContent = pendingPageUrls.length + ' page(s) uploaded';
+      });
+
+      document.getElementById('f_cancel').addEventListener('click', function(){ slotEl.innerHTML = ''; });
+      document.getElementById('f_save').addEventListener('click', async function(){
+        const isMultipage = document.getElementById('f_multipage').checked;
+        const category = document.getElementById('f_category').value;
+
+        const payload = {
+          category: category,
+          title: document.getElementById('f_title').value.trim(),
+          tag_label: document.getElementById('f_tag').value.trim(),
+          meta: document.getElementById('f_meta').value.trim(),
+          description: document.getElementById('f_desc').value.trim(),
+          external_url: document.getElementById('f_extlink').value.trim(),
+          orientation: document.getElementById('f_orientation').value,
+          media_type: isMultipage ? 'image' : (category === 'video' ? 'video' : 'image'),
+          is_multipage: isMultipage,
+          media_url: isMultipage ? null : pendingMediaUrl,
+          cover_url: pendingCoverUrl,
+          page_urls: isMultipage ? pendingPageUrls : null,
+          sort_order: parseInt(document.getElementById('f_sort').value) || 0
+        };
+        if (!payload.title){ showToast('Title is required', 'error'); return; }
+
+        const { error } = isEdit
+          ? await sb.from('media_items').update(payload).eq('id', item.id)
+          : await sb.from('media_items').insert(payload);
+
+        if (error){ showToast('Save failed: ' + error.message, 'error'); return; }
+        showToast(isEdit ? 'Media updated' : 'Media added', 'success');
+        slotEl.innerHTML = '';
+        load();
+      });
+    }
+
+
+    // Converts a single PDF File into an array of image Blobs, one per page,
+    // by rendering each page to a canvas in the browser (no server needed).
+    async function pdfFileToImageBlobs(file, onProgress){
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const blobs = [];
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++){
+        if (onProgress) onProgress(pageNum, pdf.numPages);
+        const page = await pdf.getPage(pageNum);
+        const viewport = page.getViewport({ scale: 2 }); // 2x scale for crisp flipbook pages
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        const ctx = canvas.getContext('2d');
+        await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+        const blob = await new Promise(function(resolve){ canvas.toBlob(resolve, 'image/jpeg', 0.92); });
+        blobs.push(blob);
+      }
+      return blobs;
+    }
+
+    function setupMultiUpload(zoneId, inputId, progressId, onComplete){
+      const zone = document.getElementById(zoneId);
+      const input = document.getElementById(inputId);
+      const progressWrap = document.getElementById(progressId);
+      const progressBar = progressWrap.querySelector('.upload-progress-bar');
+      const MAX_BYTES = 50 * 1024 * 1024;
+
+      zone.addEventListener('click', function(){ input.click(); });
+      zone.addEventListener('dragover', function(e){ e.preventDefault(); zone.classList.add('dragover'); });
+      zone.addEventListener('dragleave', function(){ zone.classList.remove('dragover'); });
+      zone.addEventListener('drop', function(e){
+        e.preventDefault(); zone.classList.remove('dragover');
+        if (e.dataTransfer.files.length) upload(Array.from(e.dataTransfer.files));
+      });
+      input.addEventListener('change', function(){ if (input.files.length) upload(Array.from(input.files)); });
+
+      function showZoneError(msg){
+        let errEl = zone.querySelector('.dz-error');
+        if (!errEl){
+          errEl = document.createElement('div');
+          errEl.className = 'dz-error';
+          errEl.style.color = 'var(--danger)';
+          errEl.style.fontSize = '12px';
+          errEl.style.marginTop = '8px';
+          zone.appendChild(errEl);
+        }
+        errEl.textContent = msg;
+      }
+      function clearZoneError(){
+        const errEl = zone.querySelector('.dz-error');
+        if (errEl) errEl.remove();
+      }
+
+      async function uploadOneBlob(blob, ext){
+        const path = 'media/pages/' + Date.now() + '-' + Math.random().toString(36).slice(2,8) + '.' + ext;
+        const { error } = await sb.storage.from(STORAGE_BUCKET).upload(path, blob, { contentType: blob.type || 'image/jpeg' });
+        if (error) return { error };
+        const { data: urlData } = sb.storage.from(STORAGE_BUCKET).getPublicUrl(path);
+        return { url: urlData.publicUrl };
+      }
+
+      async function upload(files){
+        clearZoneError();
+
+        const oversized = files.find(function(f){ return f.size > MAX_BYTES; });
+        if (oversized){
+          const mb = (oversized.size / (1024*1024)).toFixed(1);
+          showZoneError('"' + oversized.name + '" is ' + mb + 'MB — over the 50MB limit. Use a smaller/compressed file.');
+          showToast('File too large — see message under the upload box', 'error');
+          return;
+        }
+
+        progressWrap.classList.add('visible');
+        const urls = [];
+        const isSinglePdf = files.length === 1 && files[0].type === 'application/pdf';
+
+        if (isSinglePdf){
+          try {
+            const blobs = await pdfFileToImageBlobs(files[0], function(pageNum, total){
+              progressBar.style.width = Math.round((pageNum/total)*70) + '%'; // 0-70% = converting
+            });
+            for (let i = 0; i < blobs.length; i++){
+              const result = await uploadOneBlob(blobs[i], 'jpg');
+              progressBar.style.width = (70 + Math.round(((i+1)/blobs.length)*30)) + '%'; // 70-100% = uploading
+              if (result.error){ showZoneError('Upload failed on page ' + (i+1) + ': ' + result.error.message); continue; }
+              urls.push(result.url);
+            }
+          } catch (err){
+            showZoneError('Could not read this PDF: ' + err.message);
+            showToast('PDF conversion failed — see message under the upload box', 'error');
+            progressWrap.classList.remove('visible');
+            return;
+          }
+        } else {
+          for (let i = 0; i < files.length; i++){
+            progressBar.style.width = Math.round(((i+1)/files.length)*100) + '%';
+            const file = files[i];
+            const ext = file.name.split('.').pop();
+            const result = await uploadOneBlob(file, ext);
+            if (result.error){ showZoneError('Upload failed: ' + result.error.message); continue; }
+            urls.push(result.url);
+          }
+        }
+
+        onComplete(urls);
+        if (urls.length){
+          showToast(urls.length + ' page(s) ready — click Save to finish', 'success');
+        } else {
+          showToast('No pages were uploaded — see message under the upload box', 'error');
+        }
+        setTimeout(function(){ progressWrap.classList.remove('visible'); progressBar.style.width='0%'; }, 600);
+      }
+    }
+
+    document.getElementById('addMediaBtn').addEventListener('click', function(){ renderForm(null); });
+    load();
+  }
+
+  checkSession();
+</script>
+
+</body>
+</html>
