@@ -375,6 +375,36 @@
     font-size:12px;color:var(--text-muted);border-top:1px solid var(--line);
   }
 
+  /* ===== SITE ANNOUNCEMENT TOAST ===== */
+  .announce-toast{
+    position:fixed;left:20px;bottom:20px;z-index:90;
+    max-width:320px;
+    background:var(--surface);border:1px solid var(--accent);border-radius:14px;
+    padding:18px 20px 16px;
+    box-shadow:0 20px 50px rgba(0,0,0,0.5);
+    transform:translateY(20px);opacity:0;pointer-events:none;
+    transition:transform 0.3s ease,opacity 0.3s ease;
+  }
+  .announce-toast.visible{transform:translateY(0);opacity:1;pointer-events:auto;}
+  .announce-close{
+    position:absolute;top:10px;right:10px;
+    width:24px;height:24px;border-radius:50%;
+    background:var(--surface-2);color:var(--text-muted);
+    display:flex;align-items:center;justify-content:center;
+    font-size:11px;cursor:pointer;
+  }
+  .announce-close:hover{background:var(--accent);color:#0A0A0D;}
+  .announce-msg{font-size:13.5px;line-height:1.55;color:var(--text);padding-right:20px;}
+  .announce-link{
+    display:inline-flex;align-items:center;gap:6px;margin-top:10px;
+    font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent-2);
+  }
+  .announce-link:hover{color:var(--accent);}
+
+  @media (max-width:480px){
+    .announce-toast{left:14px;right:14px;bottom:14px;max-width:none;}
+  }
+
   /* ===== WORK DETAIL MODAL ===== */
   .modal-overlay{
     position:fixed;inset:0;z-index:100;
@@ -705,6 +735,13 @@
     <button class="flip-toolbar-btn" id="flipZoomOutBtn" aria-label="Zoom out" title="Zoom out">−</button>
     <button class="flip-toolbar-btn" id="flipFullscreenBtn" aria-label="Fullscreen" title="Fullscreen">⛶</button>
   </div>
+</div>
+
+<!-- SITE ANNOUNCEMENT — bottom-left, dismissible, controlled from admin -->
+<div class="announce-toast" id="announceToast">
+  <button class="announce-close" id="announceClose" aria-label="Dismiss">✕</button>
+  <p class="announce-msg" id="announceMsg"></p>
+  <a class="announce-link" id="announceLink" target="_blank" rel="noopener" style="display:none;"></a>
 </div>
 
 <footer>// anish shetty s — engineer · editor · designer — 2026</footer>
@@ -1125,6 +1162,32 @@
     if (data.hero_eyebrow) document.getElementById('heroEyebrow').textContent = data.hero_eyebrow;
     if (data.hero_tagline) document.getElementById('heroTagline').textContent = data.hero_tagline;
     if (data.summary_text) document.getElementById('summaryText').textContent = data.summary_text;
+
+    // site announcement toast — dismissed state is per-session only, so it
+    // reappears on the visitor's next visit/refresh, as requested
+    const SESSION_KEY = 'announcementDismissed';
+    const toastEl = document.getElementById('announceToast');
+    const alreadyDismissed = sessionStorage.getItem(SESSION_KEY) === '1';
+
+    if (data.announcement_enabled && data.announcement_message && !alreadyDismissed){
+      document.getElementById('announceMsg').textContent = data.announcement_message;
+      const linkEl = document.getElementById('announceLink');
+      if (data.announcement_link_url){
+        linkEl.href = data.announcement_link_url;
+        linkEl.textContent = (data.announcement_link_label || 'Learn more') + ' →';
+        linkEl.style.display = 'inline-flex';
+      } else {
+        linkEl.style.display = 'none';
+      }
+      // small delay so it doesn't compete visually with the hero's own
+      // entrance the instant the page loads
+      setTimeout(function(){ toastEl.classList.add('visible'); }, 600);
+    }
+
+    document.getElementById('announceClose').addEventListener('click', function(){
+      toastEl.classList.remove('visible');
+      sessionStorage.setItem(SESSION_KEY, '1');
+    });
 
     // editable section headings/labels — falls back to the HTML's default
     // text if a field is empty, so nothing ever goes blank
