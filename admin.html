@@ -1039,6 +1039,7 @@
           '<div><div class="label-text">Contact form</div><div class="label-sub">Turn the public contact form on or off</div></div>' +
           '<label class="switch"><input type="checkbox" id="s_contact"' + (data.contact_form_enabled ? ' checked' : '') + '><span class="slider"></span></label>' +
         '</div>' +
+        '<div class="field"><label>Hero eyebrow text (small line above your name)</label><input type="text" id="s_eyebrow" value="' + escapeAttr(data.hero_eyebrow) + '"></div>' +
         '<div class="field"><label>Hero tagline</label><textarea id="s_tagline">' + escapeHtml(data.hero_tagline) + '</textarea></div>' +
         '<div class="field"><label>About / summary text</label><textarea id="s_summary" style="min-height:120px;">' + escapeHtml(data.summary_text) + '</textarea></div>' +
 
@@ -1082,6 +1083,7 @@
       document.getElementById('s_save').addEventListener('click', async function(){
         const payload = {
           contact_form_enabled: document.getElementById('s_contact').checked,
+          hero_eyebrow: document.getElementById('s_eyebrow').value.trim(),
           hero_tagline: document.getElementById('s_tagline').value.trim(),
           summary_text: document.getElementById('s_summary').value.trim()
         };
