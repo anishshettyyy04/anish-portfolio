@@ -1053,8 +1053,8 @@
       { key: 'about', name: 'About' },
       { key: 'skills', name: 'Skills' },
       { key: 'work', name: 'Projects' },
-      { key: 'video', name: 'Videography' },
-      { key: 'design', name: 'Graphic Design' },
+      { key: 'video', name: 'Videography', hasDesc: true },
+      { key: 'design', name: 'Graphic Design', hasDesc: true },
       { key: 'experience', name: 'Experience' },
       { key: 'contact', name: 'Contact' }
     ];
@@ -1067,7 +1067,8 @@
         return '<div class="form-grid two-col" style="margin-bottom:10px;">' +
           '<div class="field"><label>' + s.name + ' — label (small text above heading)</label><input type="text" id="h_' + s.key + '_label" value="' + escapeAttr(data[s.key + '_label']) + '"></div>' +
           '<div class="field"><label>' + s.name + ' — heading</label><input type="text" id="h_' + s.key + '_heading" value="' + escapeAttr(data[s.key + '_heading']) + '"></div>' +
-        '</div>';
+        '</div>' +
+        (s.hasDesc ? '<div class="field" style="margin-bottom:18px;"><label>' + s.name + ' — description text</label><textarea id="h_' + s.key + '_desc">' + escapeHtml(data[s.key + '_desc']) + '</textarea></div>' : '');
       }).join('');
 
       formEl.innerHTML =
@@ -1133,6 +1134,7 @@
         SECTION_HEADINGS.forEach(function(s){
           payload[s.key + '_label'] = document.getElementById('h_' + s.key + '_label').value.trim();
           payload[s.key + '_heading'] = document.getElementById('h_' + s.key + '_heading').value.trim();
+          if (s.hasDesc) payload[s.key + '_desc'] = document.getElementById('h_' + s.key + '_desc').value.trim();
         });
         const { error } = await sb.from('site_settings').update(payload).eq('id', 1);
         if (error){ showToast('Save failed: ' + error.message, 'error'); return; }
