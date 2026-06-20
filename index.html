@@ -596,7 +596,7 @@
 <div class="section bordered" id="video">
   <div class="label" id="videoLabel">videography & editing</div>
   <h2 class="display" id="videoHeading">Reels & edits</h2>
-  <p class="body">Layout balances automatically based on how many items exist and their orientation. Landscape edits and vertical reels (9:16) are grouped and arranged separately.</p>
+  <p class="body" id="videoDesc">Layout balances automatically based on how many items exist and their orientation. Landscape edits and vertical reels (9:16) are grouped and arranged separately.</p>
   <div class="ruler"><div class="ruler-line"></div></div>
 
   <div class="filter-row">
@@ -613,7 +613,7 @@
 <div class="section bordered" id="design">
   <div class="label" id="designLabel">graphic design</div>
   <h2 class="display" id="designHeading">Posters & multi-page work</h2>
-  <p class="body">Single-page work shows as a flat poster card. Multi-page pieces (brochures, decks) open as an interactive flipbook — click an item to view.</p>
+  <p class="body" id="designDesc">Single-page work shows as a flat poster card. Multi-page pieces (brochures, decks) open as an interactive flipbook — click an item to view.</p>
   <div class="ruler"><div class="ruler-line"></div></div>
 
   <div id="designGrid" class="smart-grid" style="margin-bottom:40px;"></div>
@@ -822,15 +822,13 @@
     let isOpening = false;
 
     async function openFlipbook(pageUrls, title, description){
-      // guards against rapid double-clicks opening two instances on the
-      // same container at once, which is what was causing "won't reopen
-      // until refresh" — a half-destroyed previous instance left the
-      // container in a broken state for the next one.
-      if (isOpening) return;
+      console.info('[flipbook] openFlipbook called. isOpening=', isOpening, 'pages=', pageUrls.length);
+      if (isOpening) { console.warn('[flipbook] blocked — already opening another instance'); return; }
       isOpening = true;
 
       try {
         destroyExistingInstance();
+        console.info('[flipbook] container after destroy, childElementCount=', container.childElementCount);
 
         document.getElementById('flipTitleMain').textContent = title || '';
         const descEl = document.getElementById('flipTitleDesc');
@@ -843,13 +841,8 @@
 
         const natural = await getImageNaturalSize(pageUrls[0]);
         const ratio = natural.w / natural.h;
+        console.info('[flipbook] natural size resolved —', natural);
 
-        // Fit a SINGLE page within the available stage space, respecting its
-        // real aspect ratio. width/height passed to StPageFlip describe one
-        // page's size — the library handles the cover (single page) and the
-        // spreads (two pages side-by-side) on its own from there.
-        // On narrow screens the library collapses to single-page view anyway,
-        // so we can afford a much larger share of the viewport width there.
         const widthRatio = window.innerWidth <= 640 ? 0.85 : 0.42;
         const toolbarReserve = window.innerWidth <= 640 ? 150 : 170;
         const availW = Math.min(window.innerWidth * widthRatio, 480);
@@ -857,17 +850,17 @@
         let pageW = availW, pageH = pageW / ratio;
         if (pageH > availH){ pageH = availH; pageW = pageH * ratio; }
 
+        console.info('[flipbook] constructing St.PageFlip with', Math.round(pageW), 'x', Math.round(pageH));
         pageFlipInstance = new St.PageFlip(container, {
           width: Math.round(pageW),
           height: Math.round(pageH),
           size: 'fixed',
           maxShadowOpacity: 0.5,
-          showCover: true,        // first page opens alone, like a real front cover
-          usePortrait: false,     // keep two-page spreads on desktop; the library
-                                   // still auto-switches to single-page on narrow
-                                   // screens on its own
+          showCover: true,
+          usePortrait: false,
           mobileScrollSupport: false
         });
+        console.info('[flipbook] St.PageFlip constructed OK, calling loadFromImages');
 
         pageFlipInstance.loadFromImages(pageUrls);
         pageFlipInstance.on('flip', function(e){ updateIndicator(e.data); });
@@ -876,10 +869,9 @@
         renderGridThumbs(pageUrls);
         overlay.classList.add('open');
         document.body.style.overflow = 'hidden';
+        console.info('[flipbook] open complete. overlay classes =', overlay.className);
       } catch (err){
-        console.warn('Flipbook failed to open —', err);
-        // if construction itself failed, make sure we don't leave a half
-        // -built instance hanging around for next time
+        console.error('[flipbook] FAILED to open —', err);
         pageFlipInstance = null;
         container.innerHTML = '';
       } finally {
@@ -889,13 +881,11 @@
 
     function destroyExistingInstance(){
       if (pageFlipInstance){
+        console.info('[flipbook] destroying existing instance');
         try { pageFlipInstance.destroy(); }
-        catch (err){ console.warn('Flipbook destroy() threw, continuing anyway —', err); }
+        catch (err){ console.warn('[flipbook] destroy() threw —', err); }
         pageFlipInstance = null;
       }
-      // belt-and-suspenders: StPageFlip's destroy() doesn't always fully
-      // clear its own DOM/canvas nodes, so wipe the container directly too
-      // rather than trust destroy() alone before building a fresh instance.
       container.innerHTML = '';
     }
 
@@ -1142,8 +1132,8 @@
       aboutLabel: data.about_label, aboutHeading: data.about_heading,
       skillsLabel: data.skills_label, skillsHeading: data.skills_heading,
       workLabel: data.work_label, workHeading: data.work_heading,
-      videoLabel: data.video_label, videoHeading: data.video_heading,
-      designLabel: data.design_label, designHeading: data.design_heading,
+      videoLabel: data.video_label, videoHeading: data.video_heading, videoDesc: data.video_desc,
+      designLabel: data.design_label, designHeading: data.design_heading, designDesc: data.design_desc,
       experienceLabel: data.experience_label, experienceHeading: data.experience_heading,
       contactLabel: data.contact_label, contactHeading: data.contact_heading
     };
@@ -1354,7 +1344,8 @@
 
     async function openModal(id){
       const item = workData[id];
-      if (!item) return;
+      if (!item) { console.warn('[modal] openModal called with unknown id —', id); return; }
+      console.info('[modal] openModal called for', id, '— isMultipage:', item.isMultipage, 'pageUrls:', item.pageUrls && item.pageUrls.length, 'openFlipbook exists:', !!window.openFlipbook);
 
       // Multi-page design pieces skip the normal modal entirely and open
       // directly as an interactive flipbook — a static first-page preview
