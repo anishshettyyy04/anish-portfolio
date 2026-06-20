@@ -255,10 +255,13 @@
 
   .flip-top-bar{
     position:absolute;top:0;left:0;right:0;z-index:5;
-    display:flex;align-items:center;justify-content:space-between;
-    padding:16px 20px;
+    display:flex;align-items:flex-start;justify-content:space-between;
+    padding:18px 20px;
+    background:linear-gradient(to bottom, rgba(6,6,8,0.85), transparent);
   }
-  .flip-title-label{font-size:12px;color:var(--text-muted);letter-spacing:0.04em;}
+  .flip-title-block{max-width:75%;}
+  .flip-title-main{font-size:17px;font-weight:600;color:var(--text);}
+  .flip-title-desc{font-size:12.5px;color:var(--text-muted);margin-top:4px;line-height:1.5;max-width:480px;}
 
   .flip-stage{
     display:flex;align-items:center;justify-content:center;gap:16px;
@@ -540,7 +543,7 @@
 <!-- HERO -->
 <div class="hero">
   <div>
-    <div class="hero-eyebrow">// final-year ISE student · MITE, Mangalore</div>
+    <div class="hero-eyebrow" id="heroEyebrow">// final-year ISE student · MITE, Mangalore</div>
     <h1 class="display">Anish Shetty S<br><span class="glow-text">Engineer. Editor. Designer.</span></h1>
     <p class="hero-sub" id="heroTagline">I build things end to end — write the code, shoot and cut the video, design the poster that sells it. Currently finishing my B.E. in Information Science at MITE.</p>
     <div class="hero-btns">
@@ -645,12 +648,7 @@
   <div class="contact-box">
     <div>
       <p class="body" style="max-width:100%;">Open to internships, freelance edits, and design work. Reach out directly or use the form.</p>
-      <div class="contact-links">
-        <a class="contact-link" href="mailto:anishshettyyy@gmail.com">→ anishshettyyy@gmail.com</a>
-        <a class="contact-link" href="https://github.com/anishshettyyy" target="_blank" rel="noopener">→ github.com/anishshettyyy</a>
-        <a class="contact-link" href="https://www.linkedin.com/in/anish-shetty-s-356079293" target="_blank" rel="noopener">→ linkedin.com/in/anish-shetty-s</a>
-        <div id="socialLinksContainer"></div>
-      </div>
+      <div class="contact-links" id="socialLinksContainer"></div>
     </div>
     <form id="contactForm">
       <div class="form-field"><label for="cname">Name</label><input id="cname" type="text" placeholder="Your name" required></div>
@@ -682,7 +680,10 @@
 <!-- FLIPBOOK MODAL (multi-page design pieces — 3D page-curl viewer) -->
 <div class="modal-overlay" id="flipOverlay">
   <div class="flip-top-bar">
-    <div class="flip-title-label mono" id="flipTitleLabel"></div>
+    <div class="flip-title-block">
+      <div class="flip-title-main display" id="flipTitleMain"></div>
+      <div class="flip-title-desc" id="flipTitleDesc"></div>
+    </div>
     <button class="modal-close" id="flipClose" aria-label="Close">✕</button>
   </div>
 
@@ -795,7 +796,6 @@
     const prevBtn = document.getElementById('flipPrevBtn');
     const nextBtn = document.getElementById('flipNextBtn');
     const indicator = document.getElementById('flipPageIndicator');
-    const titleLabel = document.getElementById('flipTitleLabel');
     const gridBtn = document.getElementById('flipGridBtn');
     const gridPanel = document.getElementById('flipGridPanel');
     const gridInner = document.getElementById('flipGridInner');
@@ -819,9 +819,12 @@
       });
     }
 
-    async function openFlipbook(pageUrls, title){
+    async function openFlipbook(pageUrls, title, description){
       currentPageUrls = pageUrls;
-      titleLabel.textContent = title || '';
+      document.getElementById('flipTitleMain').textContent = title || '';
+      const descEl = document.getElementById('flipTitleDesc');
+      descEl.textContent = description || '';
+      descEl.style.display = description ? 'block' : 'none';
       container.innerHTML = ''; // clear any previous instance's DOM
       zoomLevel = 1;
       container.style.transform = 'scale(1)';
@@ -1098,6 +1101,7 @@
     const { data, error } = await sb.from('site_settings').select('*').eq('id', 1).single();
     if (error || !data) return;
 
+    if (data.hero_eyebrow) document.getElementById('heroEyebrow').textContent = data.hero_eyebrow;
     if (data.hero_tagline) document.getElementById('heroTagline').textContent = data.hero_tagline;
     if (data.summary_text) document.getElementById('summaryText').textContent = data.summary_text;
 
@@ -1325,7 +1329,7 @@
       // directly as an interactive flipbook — a static first-page preview
       // with no way to turn pages would be a dead end for the visitor.
       if (item.isMultipage && item.pageUrls && item.pageUrls.length && window.openFlipbook){
-        window.openFlipbook(item.pageUrls, item.title);
+        window.openFlipbook(item.pageUrls, item.title, item.desc);
         return;
       }
 
