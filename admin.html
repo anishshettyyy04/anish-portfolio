@@ -381,9 +381,10 @@
         <label class="switch"><input type="checkbox" id="customEnabledToggle"><span class="slider"></span></label>
       </div>
       <div class="form-grid two-col" style="margin-bottom:24px;">
+        <div class="field"><label>Section label (small text above the heading)</label><input type="text" id="customSectionLabel" placeholder="e.g. notices"></div>
         <div class="field"><label>Section title</label><input type="text" id="customSectionTitle" placeholder="e.g. Notices"></div>
-        <div class="field"><label>Subtitle (optional)</label><input type="text" id="customSectionSubtitle" placeholder="Short description shown under the title"></div>
       </div>
+      <div class="field" style="margin-bottom:24px;"><label>Subtitle (optional)</label><input type="text" id="customSectionSubtitle" placeholder="Short description shown under the title"></div>
       <button class="btn btn-secondary btn-sm" id="saveCustomMetaBtn" style="margin-bottom:28px;">Save Title & Toggle</button>
 
       <div class="add-btn" id="addCustomBtn">+ Add new card</div>
@@ -960,6 +961,7 @@
       const { data, error } = await sb.from('site_settings').select('*').eq('id', 1).single();
       if (error || !data) return;
       document.getElementById('customEnabledToggle').checked = !!data.custom_section_enabled;
+      document.getElementById('customSectionLabel').value = data.custom_section_label || '';
       document.getElementById('customSectionTitle').value = data.custom_section_title || '';
       document.getElementById('customSectionSubtitle').value = data.custom_section_subtitle || '';
     }
@@ -967,6 +969,7 @@
     document.getElementById('saveCustomMetaBtn').addEventListener('click', async function(){
       const payload = {
         custom_section_enabled: document.getElementById('customEnabledToggle').checked,
+        custom_section_label: document.getElementById('customSectionLabel').value.trim(),
         custom_section_title: document.getElementById('customSectionTitle').value.trim(),
         custom_section_subtitle: document.getElementById('customSectionSubtitle').value.trim()
       };
