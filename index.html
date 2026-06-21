@@ -1066,7 +1066,7 @@
   (function(){
     const overlay = document.getElementById('flipOverlay');
     const stage = document.querySelector('#flipOverlay .flip-stage');
-    const container = document.getElementById('flipBookContainer');
+    let container = document.getElementById('flipBookContainer');
     const closeBtn = document.getElementById('flipClose');
     const prevBtn = document.getElementById('flipPrevBtn');
     const nextBtn = document.getElementById('flipNextBtn');
@@ -1118,9 +1118,9 @@
         const ratio = natural.w / natural.h;
         console.info('[flipbook] natural size resolved —', natural);
 
-        const widthRatio = window.innerWidth <= 640 ? 0.85 : 0.42;
+        const widthRatio = window.innerWidth <= 640 ? 0.85 : 0.55;
         const toolbarReserve = window.innerWidth <= 640 ? 150 : 170;
-        const availW = Math.min(window.innerWidth * widthRatio, 480);
+        const availW = Math.min(window.innerWidth * widthRatio, 560);
         const availH = window.innerHeight - toolbarReserve;
         let pageW = availW, pageH = pageW / ratio;
         if (pageH > availH){ pageH = availH; pageW = pageH * ratio; }
@@ -1161,7 +1161,15 @@
         catch (err){ console.warn('[flipbook] destroy() threw —', err); }
         pageFlipInstance = null;
       }
-      container.innerHTML = '';
+      // Rather than trust innerHTML='' to fully reset state StPageFlip may
+      // have attached to these specific DOM nodes (event listeners, internal
+      // references), replace the container with a brand new, never-touched
+      // element each time. This is what actually fixed "won't reopen until
+      // refresh" — clearing innerHTML alone left something stale behind.
+      const fresh = document.createElement('div');
+      fresh.id = 'flipBookContainer';
+      container.replaceWith(fresh);
+      container = fresh;
     }
 
     function updateIndicator(current){
