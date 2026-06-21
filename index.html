@@ -495,6 +495,61 @@
   .testimonial-author{font-family:'Space Grotesk',sans-serif;font-weight:500;font-size:14px;}
   .testimonial-role{font-size:12px;color:var(--text-muted);margin-top:2px;}
 
+  /* ===== CAROUSEL (Custom Section — Flipkart-style auto-sliding banner) ===== */
+  .carousel{position:relative;border-radius:16px;overflow:hidden;}
+  .carousel-track{
+    display:flex;
+    transition:transform 0.5s cubic-bezier(.4,0,.2,1);
+  }
+  .carousel-slide{
+    flex:0 0 100%;min-width:0;
+    cursor:pointer;
+  }
+  .carousel-slide-inner{
+    display:grid;grid-template-columns:1fr 1fr;
+    background:var(--surface);border:1px solid var(--line);border-radius:16px;
+    overflow:hidden;min-height:260px;
+  }
+  .carousel-slide-media{
+    background:var(--placeholder-grad);position:relative;overflow:hidden;
+  }
+  .carousel-slide-media img,.carousel-slide-media video{
+    width:100%;height:100%;object-fit:cover;display:block;
+  }
+  .carousel-slide-body{
+    padding:32px 36px;display:flex;flex-direction:column;justify-content:center;
+  }
+  .carousel-slide-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:22px;margin-bottom:10px;}
+  .carousel-slide-desc{font-size:13.5px;line-height:1.7;color:var(--text-muted);margin-bottom:18px;}
+
+  .carousel-arrow{
+    position:absolute;top:50%;transform:translateY(-50%);z-index:3;
+    width:38px;height:38px;border-radius:50%;
+    background:rgba(20,20,26,0.6);border:1px solid var(--line);color:var(--text);
+    display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer;
+    transition:border-color .2s,color .2s,background .2s;
+  }
+  .carousel-arrow:hover{border-color:var(--accent);color:var(--accent-2);background:rgba(20,20,26,0.85);}
+  .carousel-arrow-prev{left:14px;}
+  .carousel-arrow-next{right:14px;}
+
+  .carousel-dots{
+    position:absolute;bottom:14px;left:0;right:0;z-index:3;
+    display:flex;justify-content:center;gap:7px;
+  }
+  .carousel-dot{
+    width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,0.35);
+    cursor:pointer;transition:background .2s,width .2s;
+  }
+  .carousel-dot.active{background:var(--accent);width:22px;border-radius:4px;}
+
+  @media (max-width:760px){
+    .carousel-slide-inner{grid-template-columns:1fr;min-height:0;}
+    .carousel-slide-media{aspect-ratio:16/9;}
+    .carousel-slide-body{padding:24px 20px;}
+    .carousel-arrow{width:32px;height:32px;font-size:14px;}
+  }
+
   /* ===== CONTACT ===== */
   .contact-box{
     background:var(--surface);border:1px solid var(--line);border-radius:16px;
@@ -891,13 +946,20 @@
   <div class="testimonial-grid" id="testimonialGrid"></div>
 </div>
 
-<!-- CUSTOM SECTION — hidden by default, shown only if enabled + has cards -->
+<!-- CUSTOM SECTION — hidden by default, shown only if enabled + has cards.
+     Renders as an auto-sliding carousel (one card visible at a time). -->
 <div class="section bordered" id="customSection" style="display:none;">
-  <div class="label">notices</div>
+  <div class="label" id="customSectionLabel">notices</div>
   <h2 class="display" id="customSectionTitle">Notices</h2>
   <p class="body" id="customSectionSubtitle" style="display:none;"></p>
   <div class="ruler"><div class="ruler-line"></div></div>
-  <div class="smart-grid" id="customGrid"></div>
+
+  <div class="carousel" id="customCarousel">
+    <div class="carousel-track" id="customCarouselTrack"></div>
+    <button class="carousel-arrow carousel-arrow-prev" id="customCarouselPrev" aria-label="Previous">‹</button>
+    <button class="carousel-arrow carousel-arrow-next" id="customCarouselNext" aria-label="Next">›</button>
+    <div class="carousel-dots" id="customCarouselDots"></div>
+  </div>
 </div>
 
 <!-- CONTACT -->
@@ -1521,7 +1583,7 @@
   }
 
   async function loadCustomSection(){
-    const { data: settings, error: settingsError } = await sb.from('site_settings').select('custom_section_enabled, custom_section_title, custom_section_subtitle').eq('id', 1).single();
+    const { data: settings, error: settingsError } = await sb.from('site_settings').select('custom_section_enabled, custom_section_label, custom_section_title, custom_section_subtitle').eq('id', 1).single();
     const section = document.getElementById('customSection');
 
     if (settingsError){ console.warn('Custom section: settings query failed —', settingsError.message); section.style.display = 'none'; return; }
@@ -1541,6 +1603,7 @@
 
     console.info('Custom section: rendering', data.length, 'card(s).');
 
+    document.getElementById('customSectionLabel').textContent = settings.custom_section_label || 'notices';
     document.getElementById('customSectionTitle').textContent = settings.custom_section_title || 'Notices';
     const subEl = document.getElementById('customSectionSubtitle');
     if (settings.custom_section_subtitle){
@@ -1548,9 +1611,8 @@
       subEl.style.display = 'block';
     }
 
-    // Register every card into workData and hand the ids to the SAME
-    // auto-layout grid engine Videography/Design use — 1 item centers,
-    // 2 sit side by side, 3 becomes featured+stacked, and so on.
+    // Register every card into workData so clicking a slide still opens
+    // the same work-detail modal/player used everywhere else on the site.
     const ids = data.map(function(c){
       const id = 'custom-' + c.id;
       workData[id] = {
@@ -1564,8 +1626,85 @@
       return id;
     });
 
-    renderGrid(document.getElementById('customGrid'), ids);
+    buildCarousel(data, ids);
     section.style.display = 'block';
+  }
+
+  // Auto-sliding carousel for the Custom Section — one slide visible at a
+  // time, advances automatically every few seconds, pauses while a visitor
+  // is actively interacting with it (hovering, or has focused a control).
+  function buildCarousel(items, ids){
+    const track = document.getElementById('customCarouselTrack');
+    const dotsEl = document.getElementById('customCarouselDots');
+    const prevBtn = document.getElementById('customCarouselPrev');
+    const nextBtn = document.getElementById('customCarouselNext');
+    const carouselEl = document.getElementById('customCarousel');
+
+    track.innerHTML = items.map(function(c, i){
+      const id = ids[i];
+      const item = workData[id];
+      const mediaHtml = item.coverUrl
+        ? '<img src="' + item.coverUrl + '" alt="' + escapeHtmlClient(c.title) + '" loading="lazy">'
+        : '';
+      return '<div class="carousel-slide" data-open data-id="' + id + '" tabindex="0" role="button" aria-label="View ' + escapeHtmlClient(c.title) + '">' +
+        '<div class="carousel-slide-inner">' +
+          '<div class="carousel-slide-media">' + mediaHtml + '</div>' +
+          '<div class="carousel-slide-body">' +
+            '<div class="carousel-slide-title">' + escapeHtmlClient(c.title) + '</div>' +
+            (c.description ? '<div class="carousel-slide-desc">' + escapeHtmlClient(c.description) + '</div>' : '') +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+    attachOpenHandlers(track);
+
+    // single-slide carousels don't need any controls at all
+    const showControls = items.length > 1;
+    prevBtn.style.display = showControls ? 'flex' : 'none';
+    nextBtn.style.display = showControls ? 'flex' : 'none';
+    dotsEl.style.display = showControls ? 'flex' : 'none';
+
+    dotsEl.innerHTML = items.map(function(_, i){
+      return '<div class="carousel-dot' + (i === 0 ? ' active' : '') + '" data-slide="' + i + '"></div>';
+    }).join('');
+
+    let current = 0;
+    let autoTimer = null;
+    const AUTO_DELAY = 4500;
+
+    function goTo(index){
+      current = (index + items.length) % items.length;
+      track.style.transform = 'translateX(-' + (current * 100) + '%)';
+      dotsEl.querySelectorAll('.carousel-dot').forEach(function(d, i){
+        d.classList.toggle('active', i === current);
+      });
+    }
+
+    function startAuto(){
+      if (!showControls) return;
+      stopAuto();
+      autoTimer = setInterval(function(){ goTo(current + 1); }, AUTO_DELAY);
+    }
+    function stopAuto(){
+      if (autoTimer) clearInterval(autoTimer);
+      autoTimer = null;
+    }
+
+    prevBtn.addEventListener('click', function(){ goTo(current - 1); startAuto(); });
+    nextBtn.addEventListener('click', function(){ goTo(current + 1); startAuto(); });
+    dotsEl.querySelectorAll('[data-slide]').forEach(function(dot){
+      dot.addEventListener('click', function(){ goTo(parseInt(dot.getAttribute('data-slide'))); startAuto(); });
+    });
+
+    // pause on hover/focus so a visitor reading a slide doesn't get
+    // interrupted mid-read, resume once they move away
+    carouselEl.addEventListener('mouseenter', stopAuto);
+    carouselEl.addEventListener('mouseleave', startAuto);
+    carouselEl.addEventListener('focusin', stopAuto);
+    carouselEl.addEventListener('focusout', startAuto);
+
+    goTo(0);
+    startAuto();
   }
 
   async function loadSettings(){
