@@ -19,6 +19,17 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.js"></script>
+<script>
+  // Runs immediately, before the page paints, so a returning light-mode
+  // visitor never sees a flash of dark mode first.
+  (function(){
+    try {
+      if (localStorage.getItem('theme') === 'light'){
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    } catch(e){ /* localStorage unavailable — just stay on default dark */ }
+  })();
+</script>
 <style>
   :root{
     --bg:#0A0A0D;
@@ -29,6 +40,20 @@
     --text-muted:#8B8B96;
     --accent:#FF6B1A;
     --accent-2:#FFB454;
+    --bg-translucent:rgba(10,10,13,0.85);
+    --placeholder-grad:linear-gradient(135deg,#1d1d26,#0e0e13);
+  }
+  :root[data-theme="light"]{
+    --bg:#FAFAF8;
+    --surface:#FFFFFF;
+    --surface-2:#F1EFEA;
+    --line:#E3E1DC;
+    --text:#16161A;
+    --text-muted:#6B6B76;
+    --accent:#FF6B1A;
+    --accent-2:#E0670A;
+    --bg-translucent:rgba(250,250,248,0.85);
+    --placeholder-grad:linear-gradient(135deg,#EDEBE5,#E0DDD5);
   }
   *{margin:0;box-sizing:border-box;}
   html{scroll-behavior:smooth;}
@@ -79,6 +104,7 @@
     background:var(--bg);
     color:var(--text);
     font-family:'Inter',sans-serif;
+    transition:background-color 0.25s ease, color 0.25s ease;
   }
   .mono{font-family:'JetBrains Mono',monospace;}
   .display{font-family:'Space Grotesk',sans-serif;}
@@ -90,7 +116,7 @@
     position:fixed;top:0;left:0;right:0;z-index:50;
     display:flex;align-items:center;justify-content:space-between;
     padding:20px 48px;
-    background:rgba(10,10,13,0.85);
+    background:var(--bg-translucent);
     backdrop-filter:blur(10px);
     border-bottom:1px solid var(--line);
     transition:transform 0.35s ease;
@@ -100,7 +126,31 @@
   .logo span{color:var(--accent);}
   .nav-links{display:flex;gap:36px;font-size:14px;color:var(--text-muted);}
   .nav-links a:hover{color:var(--text);}
-  .nav-cta{display:flex;gap:12px;}
+  .nav-cta{display:flex;gap:12px;align-items:center;}
+
+  .theme-toggle{
+    width:38px;height:38px;border-radius:9px;
+    background:transparent;border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;flex-shrink:0;color:var(--text-muted);
+    transition:border-color .2s,color .2s;
+  }
+  .theme-toggle:hover{border-color:var(--accent);color:var(--accent-2);}
+  .theme-toggle svg{width:17px;height:17px;}
+  .theme-toggle .icon-sun{display:none;}
+  :root[data-theme="light"] .theme-toggle .icon-moon{display:none;}
+  :root[data-theme="light"] .theme-toggle .icon-sun{display:block;}
+
+  .theme-toggle-mobile{
+    display:flex;align-items:center;gap:10px;
+    padding:14px 8px;border-radius:8px;color:var(--text-muted);
+    font-size:15px;border-top:1px solid var(--line);margin-top:8px;
+  }
+  .theme-toggle-mobile:hover{background:var(--surface-2);color:var(--accent-2);}
+  .theme-toggle-mobile svg{width:18px;height:18px;flex-shrink:0;}
+  .theme-toggle-mobile .icon-sun{display:none;}
+  :root[data-theme="light"] .theme-toggle-mobile .icon-moon{display:none;}
+  :root[data-theme="light"] .theme-toggle-mobile .icon-sun{display:block;}
 
   .hamburger-btn{
     display:none;
@@ -203,7 +253,7 @@
     border-radius:16px;
     overflow:hidden;
     border:1px solid var(--line);
-    background:linear-gradient(160deg,#1a1a23,#0d0d11);
+    background:var(--placeholder-grad);
   }
   .hero-media img, .hero-media video{
     width:100%;height:100%;object-fit:cover;display:block;
@@ -240,7 +290,7 @@
   .project-card:hover{border-color:var(--accent);transform:translateY(-3px);}
   .project-thumb{
     height:150px;
-    background:linear-gradient(135deg,#1d1d26,#0e0e13);
+    background:var(--placeholder-grad);
     overflow:hidden;
   }
   .project-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
@@ -288,7 +338,7 @@
 
   .sg-item{
     border-radius:12px;border:1px solid var(--line);
-    background:linear-gradient(135deg,#1d1d26,#0e0e13);
+    background:var(--placeholder-grad);
     position:relative;overflow:hidden;aspect-ratio:16/10;
     display:flex;align-items:center;justify-content:center;
     cursor:pointer;transition:border-color .25s,transform .25s;
@@ -338,7 +388,7 @@
     border-radius:3px;
     flex-shrink:0;
   }
-  #flipBookContainer .page{ background:#1a1a23; }
+  #flipBookContainer .page{ background:var(--surface-2); }
   #flipBookContainer .page img{
     width:100%;height:100%;object-fit:contain;display:block;
   }
@@ -383,12 +433,12 @@
   }
   .flip-grid-thumb{
     border:1px solid var(--line);border-radius:8px;overflow:hidden;cursor:pointer;
-    background:#1a1a23;transition:border-color .2s;
+    background:var(--surface-2);transition:border-color .2s;
     display:flex;flex-direction:column;
   }
   .flip-grid-thumb:hover{border-color:var(--accent);}
   .flip-grid-thumb:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
-  .flip-grid-thumb img{width:100%;display:block;object-fit:contain;background:#1a1a23;}
+  .flip-grid-thumb img{width:100%;display:block;object-fit:contain;background:var(--surface-2);}
   .flip-grid-thumb .num{font-size:11px;color:var(--text-muted);text-align:center;padding:6px 0;font-family:'JetBrains Mono',monospace;}
 
   @media (max-width:760px){
@@ -543,7 +593,7 @@
   }
   .modal-overlay.open .modal-box{transform:translateY(0) scale(1);}
   .modal-media{
-    aspect-ratio:16/9;background:linear-gradient(135deg,#1d1d26,#0e0e13);
+    aspect-ratio:16/9;background:var(--placeholder-grad);
     display:flex;align-items:center;justify-content:center;
     border-bottom:1px solid var(--line);
     position:relative;overflow:hidden;
@@ -679,6 +729,10 @@
     <a href="#contact">Contact</a>
   </div>
   <div class="nav-cta">
+    <button class="theme-toggle" id="themeToggle" aria-label="Switch to light mode" title="Switch theme">
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+    </button>
     <a class="btn btn-secondary" href="#" id="resumeBtn" target="_blank" rel="noopener">Resume</a>
     <a class="btn btn-primary" href="#contact">Contact</a>
   </div>
@@ -694,6 +748,11 @@
   <a href="#experience">Experience</a>
   <a href="#contact">Contact</a>
   <a href="#" id="resumeBtnMobile" target="_blank" rel="noopener">Resume</a>
+  <button class="theme-toggle-mobile" id="themeToggleMobile">
+    <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+    <span id="themeToggleMobileLabel">Switch to light mode</span>
+  </button>
 </div>
 
 <main>
@@ -998,6 +1057,42 @@
         ticking = true;
       }
     });
+  })();
+
+  // ===== LIGHT/DARK THEME TOGGLE =====
+  (function(){
+    const STORAGE_KEY = 'theme';
+    const root = document.documentElement;
+    const toggleBtn = document.getElementById('themeToggle');
+    const toggleBtnMobile = document.getElementById('themeToggleMobile');
+    const mobileLabel = document.getElementById('themeToggleMobileLabel');
+
+    function applyTheme(theme){
+      if (theme === 'light'){
+        root.setAttribute('data-theme', 'light');
+        toggleBtn.setAttribute('aria-label', 'Switch to dark mode');
+        mobileLabel.textContent = 'Switch to dark mode';
+      } else {
+        root.removeAttribute('data-theme');
+        toggleBtn.setAttribute('aria-label', 'Switch to light mode');
+        mobileLabel.textContent = 'Switch to light mode';
+      }
+    }
+
+    function toggleTheme(){
+      const isLight = root.getAttribute('data-theme') === 'light';
+      const next = isLight ? 'dark' : 'light';
+      applyTheme(next);
+      localStorage.setItem(STORAGE_KEY, next);
+    }
+
+    // restore saved preference — defaults to dark (the site's intended look)
+    // if the visitor has never toggled it before
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved === 'light') applyTheme('light');
+
+    toggleBtn.addEventListener('click', toggleTheme);
+    toggleBtnMobile.addEventListener('click', toggleTheme);
   })();
 
   // ===== KEYBOARD ACCESSIBILITY — Enter/Space activates any [data-open]
