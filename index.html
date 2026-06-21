@@ -4,6 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Anish Shetty S — Engineer, Editor, Designer</title>
+<meta name="description" content="Portfolio of Anish Shetty S — final-year Information Science Engineering student at MITE Mangalore. Code projects, video editing, and graphic design work.">
+<meta name="author" content="Anish Shetty S">
+
+<!-- Open Graph — controls how the link looks when shared on LinkedIn, WhatsApp, etc. -->
+<meta property="og:title" content="Anish Shetty S — Engineer, Editor, Designer">
+<meta property="og:description" content="Final-year ISE student building things end to end — code, video, and design.">
+<meta property="og:type" content="website">
+
+<!-- Favicon — simple inline SVG, no separate image file needed -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230A0A0D'/%3E%3Ctext x='50' y='68' font-size='58' font-family='monospace' font-weight='bold' fill='%23FF6B1A' text-anchor='middle'%3EA%3C/text%3E%3C/svg%3E">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -28,6 +39,42 @@
   ::-webkit-scrollbar-thumb{background:var(--line);border-radius:6px;border:2px solid var(--surface);}
   ::-webkit-scrollbar-thumb:hover{background:var(--accent);}
   *{scrollbar-width:thin;scrollbar-color:var(--line) var(--surface);}
+
+  /* ===== SKELETON LOADING STATES ===== */
+  /* One shared shimmer animation, applied via .skeleton-* helper classes so
+     every section's "loading" look is consistent instead of one-off. */
+  @keyframes skeleton-shimmer{
+    0%{background-position:-200% 0;}
+    100%{background-position:200% 0;}
+  }
+  .skeleton{
+    background:linear-gradient(90deg, var(--surface) 25%, var(--surface-2) 37%, var(--surface) 63%);
+    background-size:200% 100%;
+    animation:skeleton-shimmer 1.6s ease-in-out infinite;
+    border-radius:10px;
+  }
+  .skeleton-card{
+    border:1px solid var(--line);border-radius:12px;overflow:hidden;
+    background:var(--surface);
+  }
+  .skeleton-card .skeleton-thumb{height:150px;border-radius:0;}
+  .skeleton-card .skeleton-body{padding:18px 20px 20px;}
+  .skeleton-line{height:12px;margin-bottom:10px;}
+  .skeleton-line.w-60{width:60%;}
+  .skeleton-line.w-80{width:80%;}
+  .skeleton-line.w-40{width:40%;}
+  .skeleton-chip-row{display:flex;gap:8px;flex-wrap:wrap;}
+  .skeleton-chip{height:26px;width:70px;border-radius:8px;}
+  .skeleton-row{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:18px 0;border-top:1px solid var(--line);
+  }
+  .skeleton-row:first-child{border-top:none;}
+
+  @media (prefers-reduced-motion: reduce){
+    .skeleton{animation:none;}
+  }
+
   body{
     background:var(--bg);
     color:var(--text);
@@ -131,6 +178,24 @@
   }
   .hero-sub{font-size:16.5px;line-height:1.7;color:var(--text-muted);margin-top:24px;max-width:480px;}
   .hero-btns{display:flex;gap:14px;margin-top:36px;}
+
+  .hero-status{
+    display:flex;align-items:center;gap:9px;margin-top:18px;
+    font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--text-muted);
+  }
+  .hero-status-dot{
+    width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0;
+    box-shadow:0 0 0 0 rgba(255,107,26,0.6);
+    animation:status-pulse 2s infinite;
+  }
+  @keyframes status-pulse{
+    0%{box-shadow:0 0 0 0 rgba(255,107,26,0.5);}
+    70%{box-shadow:0 0 0 7px rgba(255,107,26,0);}
+    100%{box-shadow:0 0 0 0 rgba(255,107,26,0);}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .hero-status-dot{animation:none;}
+  }
 
   .hero-media{
     position:relative;
@@ -370,6 +435,45 @@
   .form-field input:focus,.form-field textarea:focus{outline:2px solid var(--accent);outline-offset:1px;}
   .form-field label{font-size:12px;color:var(--text-muted);display:block;margin-bottom:6px;}
 
+  /* ===== SKELETON LOADING STATES ===== */
+  @keyframes shimmer{
+    0%{background-position:-200% 0;}
+    100%{background-position:200% 0;}
+  }
+  .skel{
+    background:linear-gradient(90deg, var(--surface) 25%, var(--surface-2) 50%, var(--surface) 75%);
+    background-size:200% 100%;
+    animation:shimmer 1.6s ease-in-out infinite;
+    border-radius:8px;
+  }
+  .skel-card{
+    background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    padding:28px 26px;
+  }
+  .skel-line{height:13px;border-radius:6px;margin-bottom:10px;}
+  .skel-line.w-60{width:60%;}
+  .skel-line.w-80{width:80%;}
+  .skel-line.w-40{width:40%;}
+  .skel-chip-row{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
+  .skel-chip{height:24px;width:64px;border-radius:8px;}
+
+  .skel-project{
+    background:var(--surface);border:1px solid var(--line);border-radius:12px;
+    overflow:hidden;
+  }
+  .skel-project .skel-thumb{height:150px;border-radius:0;}
+  .skel-project .skel-body{padding:18px 20px 20px;}
+
+  .skel-grid-tile{
+    border-radius:12px;aspect-ratio:16/10;
+  }
+
+  .skel-exp-row{
+    display:grid;grid-template-columns:160px 1fr;gap:24px;
+    padding:22px 0;border-top:1px solid var(--line);
+  }
+  .skel-exp-row:first-child{border-top:none;}
+
   footer{
     text-align:center;padding:40px;font-family:'JetBrains Mono',monospace;
     font-size:12px;color:var(--text-muted);border-top:1px solid var(--line);
@@ -489,6 +593,7 @@
     .card-grid,.skill-grid{grid-template-columns:1fr;}
     .contact-box{grid-template-columns:1fr;padding:28px 24px;gap:28px;}
     .exp-item{grid-template-columns:1fr;gap:6px;}
+    .skel-exp-row{grid-template-columns:1fr;gap:6px;}
 
     .smart-grid[data-count="3"],
     .smart-grid[data-count="4"],
@@ -536,6 +641,7 @@
   @media (prefers-reduced-motion: reduce){
     html{scroll-behavior:auto;}
     nav, .project-card, .pill, .flip-nav-btn, .btn, .modal-overlay, .modal-box, .mobile-menu, .hamburger-btn span{transition:none;}
+    .skel{animation:none;background:var(--surface-2);}
   }
 </style>
 </head>
@@ -576,6 +682,10 @@
     <div class="hero-eyebrow" id="heroEyebrow">// final-year ISE student · MITE, Mangalore</div>
     <h1 class="display">Anish Shetty S<br><span class="glow-text">Engineer. Editor. Designer.</span></h1>
     <p class="hero-sub" id="heroTagline">I build things end to end — write the code, shoot and cut the video, design the poster that sells it. Currently finishing my B.E. in Information Science at MITE.</p>
+    <div class="hero-status" id="heroStatus" style="display:none;">
+      <span class="hero-status-dot"></span>
+      <span id="heroStatusText"></span>
+    </div>
     <div class="hero-btns">
       <a class="btn btn-primary" href="#work">View Work</a>
       <a class="btn btn-secondary" href="#contact">Get in Touch</a>
@@ -610,7 +720,11 @@
   <h2 class="display" id="skillsHeading">What I work with</h2>
   <div class="ruler"><div class="ruler-line"></div></div>
 
-  <div class="skill-grid" id="skillGrid"></div>
+  <div class="skill-grid" id="skillGrid">
+    <div class="skill-card"><div class="skeleton skeleton-line w-40" style="height:11px;margin-bottom:14px;"></div><div class="skeleton skeleton-line w-60" style="height:19px;margin-bottom:16px;"></div><div class="skeleton-chip-row"><div class="skeleton skeleton-chip"></div><div class="skeleton skeleton-chip"></div><div class="skeleton skeleton-chip"></div></div></div>
+    <div class="skill-card"><div class="skeleton skeleton-line w-40" style="height:11px;margin-bottom:14px;"></div><div class="skeleton skeleton-line w-60" style="height:19px;margin-bottom:16px;"></div><div class="skeleton-chip-row"><div class="skeleton skeleton-chip"></div><div class="skeleton skeleton-chip"></div><div class="skeleton skeleton-chip"></div></div></div>
+    <div class="skill-card"><div class="skeleton skeleton-line w-40" style="height:11px;margin-bottom:14px;"></div><div class="skeleton skeleton-line w-60" style="height:19px;margin-bottom:16px;"></div><div class="skeleton-chip-row"><div class="skeleton skeleton-chip"></div><div class="skeleton skeleton-chip"></div></div></div>
+  </div>
 </div>
 
 <!-- PROJECTS / CODE -->
@@ -619,7 +733,11 @@
   <h2 class="display" id="workHeading">Projects</h2>
   <div class="ruler"><div class="ruler-line"></div><span class="ruler-count" id="projectCount"></span></div>
 
-  <div class="card-grid" id="projectGrid"></div>
+  <div class="card-grid" id="projectGrid">
+    <div class="skeleton-card"><div class="skeleton skeleton-thumb"></div><div class="skeleton-body"><div class="skeleton skeleton-line w-40" style="height:10px;"></div><div class="skeleton skeleton-line w-80" style="height:16px;margin-top:8px;"></div><div class="skeleton skeleton-line w-60"></div></div></div>
+    <div class="skeleton-card"><div class="skeleton skeleton-thumb"></div><div class="skeleton-body"><div class="skeleton skeleton-line w-40" style="height:10px;"></div><div class="skeleton skeleton-line w-80" style="height:16px;margin-top:8px;"></div><div class="skeleton skeleton-line w-60"></div></div></div>
+    <div class="skeleton-card"><div class="skeleton skeleton-thumb"></div><div class="skeleton-body"><div class="skeleton skeleton-line w-40" style="height:10px;"></div><div class="skeleton skeleton-line w-80" style="height:16px;margin-top:8px;"></div><div class="skeleton skeleton-line w-60"></div></div></div>
+  </div>
 </div>
 
 <!-- VIDEO -->
@@ -635,7 +753,11 @@
     <button class="pill" data-filter="reels">REELS</button>
   </div>
 
-  <div id="videoLandscapeGrid" class="smart-grid"></div>
+  <div id="videoLandscapeGrid" class="smart-grid" data-count="3">
+    <div class="sg-item skeleton" style="cursor:default;"></div>
+    <div class="sg-item skeleton" style="cursor:default;"></div>
+    <div class="sg-item skeleton" style="cursor:default;"></div>
+  </div>
   <div id="videoReelRow" class="reel-row" style="margin-top:24px;"></div>
 </div>
 
@@ -646,7 +768,11 @@
   <p class="body" id="designDesc">Single-page work shows as a flat poster card. Multi-page pieces (brochures, decks) open as an interactive flipbook — click an item to view.</p>
   <div class="ruler"><div class="ruler-line"></div></div>
 
-  <div id="designGrid" class="smart-grid" style="margin-bottom:40px;"></div>
+  <div id="designGrid" class="smart-grid" data-count="3" style="margin-bottom:40px;">
+    <div class="sg-item skeleton" style="cursor:default;"></div>
+    <div class="sg-item skeleton" style="cursor:default;"></div>
+    <div class="sg-item skeleton" style="cursor:default;"></div>
+  </div>
 </div>
 
 <!-- EXPERIENCE -->
@@ -655,7 +781,10 @@
   <h2 class="display" id="experienceHeading">Where I've shown up</h2>
   <div class="ruler"><div class="ruler-line"></div></div>
 
-  <div id="expList"></div>
+  <div id="expList">
+    <div class="skeleton-row"><div class="skeleton skeleton-line w-40" style="height:11px;margin:0;"></div><div style="flex:1;margin-left:24px;"><div class="skeleton skeleton-line w-60" style="height:15px;"></div><div class="skeleton skeleton-line w-40" style="height:11px;margin:0;"></div></div></div>
+    <div class="skeleton-row"><div class="skeleton skeleton-line w-40" style="height:11px;margin:0;"></div><div style="flex:1;margin-left:24px;"><div class="skeleton skeleton-line w-60" style="height:15px;"></div><div class="skeleton skeleton-line w-40" style="height:11px;margin:0;"></div></div></div>
+  </div>
   <div class="achv-row" id="achvList"></div>
 </div>
 
@@ -754,6 +883,66 @@
   const SUPABASE_URL = 'https://hjyexinxxdcywvinyaut.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhqeWV4aW54eGRjeXd2aW55YXV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MjY0ODgsImV4cCI6MjA5NzMwMjQ4OH0.U-VDiO1yugPoD6b3jm-C8rqdo5yC7GsPv4gJ5rDcnDE';
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // ===== SKELETON LOADING STATES =====
+  // Fills every data-driven section with a placeholder shape that matches
+  // its real layout, the instant the page loads — before any Supabase
+  // query has even started. Each loader function below clears this out
+  // (via .innerHTML =) the moment real data arrives.
+  (function(){
+    function skillSkeleton(){
+      return Array.from({length: 3}).map(function(){
+        return '<div class="skel-card">' +
+          '<div class="skel skel-line w-40" style="height:11px;"></div>' +
+          '<div class="skel skel-line w-60" style="height:19px;margin-top:10px;"></div>' +
+          '<div class="skel-chip-row">' +
+            Array.from({length: 5}).map(function(){ return '<div class="skel skel-chip"></div>'; }).join('') +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    function projectSkeleton(){
+      return Array.from({length: 3}).map(function(){
+        return '<div class="skel-project">' +
+          '<div class="skel skel-thumb"></div>' +
+          '<div class="skel-body">' +
+            '<div class="skel skel-line w-40" style="height:10px;"></div>' +
+            '<div class="skel skel-line w-80" style="height:16px;margin-top:10px;"></div>' +
+            '<div class="skel skel-line w-60" style="height:11px;"></div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    function gridSkeleton(count){
+      return Array.from({length: count}).map(function(){ return '<div class="skel skel-grid-tile"></div>'; }).join('');
+    }
+
+    function expSkeleton(){
+      return Array.from({length: 3}).map(function(){
+        return '<div class="skel-exp-row">' +
+          '<div class="skel skel-line w-80" style="height:11px;"></div>' +
+          '<div>' +
+            '<div class="skel skel-line w-60" style="height:15px;"></div>' +
+            '<div class="skel skel-line w-40" style="height:11px;margin-top:8px;"></div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    const skillGrid = document.getElementById('skillGrid');
+    const projectGrid = document.getElementById('projectGrid');
+    const videoGrid = document.getElementById('videoLandscapeGrid');
+    const designGrid = document.getElementById('designGrid');
+    const expList = document.getElementById('expList');
+
+    if (skillGrid) skillGrid.innerHTML = skillSkeleton();
+    if (projectGrid) projectGrid.innerHTML = projectSkeleton();
+    if (videoGrid){ videoGrid.setAttribute('data-count', '3'); videoGrid.innerHTML = gridSkeleton(3); }
+    if (designGrid){ designGrid.setAttribute('data-count', '3'); designGrid.innerHTML = gridSkeleton(3); }
+    if (expList) expList.innerHTML = expSkeleton();
+  })();
 
   // ===== AUTO-HIDE NAVBAR ON SCROLL =====
   (function(){
@@ -1160,6 +1349,10 @@
     if (error || !data) return;
 
     if (data.hero_eyebrow) document.getElementById('heroEyebrow').textContent = data.hero_eyebrow;
+    if (data.hero_status){
+      document.getElementById('heroStatusText').textContent = data.hero_status;
+      document.getElementById('heroStatus').style.display = 'flex';
+    }
     if (data.hero_tagline) document.getElementById('heroTagline').textContent = data.hero_tagline;
     if (data.summary_text) document.getElementById('summaryText').textContent = data.summary_text;
 
