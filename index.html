@@ -381,7 +381,7 @@
   #flipOverlay .modal-box{display:none;} /* unused here — flipbook builds its own layout */
 
   .flip-top-bar{
-    position:absolute;top:0;left:0;right:0;z-index:5;
+    position:absolute;top:0;left:0;right:0;z-index:10;
     display:flex;align-items:flex-start;justify-content:space-between;
     padding:18px 20px;
     background:linear-gradient(to bottom, rgba(6,6,8,0.85), transparent);
@@ -1220,7 +1220,16 @@
         descEl.style.display = description ? 'block' : 'none';
         zoomLevel = 1;
         container.style.transform = 'scale(1)';
+
+        // Hard-reset the grid panel via inline style, not just the class —
+        // this was confirmed as the actual bug: the panel was getting stuck
+        // visibly open across a close→reopen cycle. Setting display:none
+        // directly leaves no ambiguity, regardless of why the class removal
+        // wasn't taking visual effect.
         gridPanel.classList.remove('open');
+        gridPanel.style.display = 'none';
+        gridBtn.classList.remove('active');
+
         currentPageUrls = pageUrls;
 
         const natural = await getImageNaturalSize(pageUrls[0]);
@@ -1310,6 +1319,8 @@
           const idx = parseInt(el.getAttribute('data-page'));
           if (pageFlipInstance) pageFlipInstance.flip(idx);
           gridPanel.classList.remove('open');
+          gridPanel.style.display = 'none';
+          gridBtn.classList.remove('active');
         });
       });
     }
@@ -1318,6 +1329,8 @@
       overlay.classList.remove('open');
       document.body.style.overflow = '';
       gridPanel.classList.remove('open');
+      gridPanel.style.display = 'none';
+      gridBtn.classList.remove('active');
       if (document.fullscreenElement) document.exitFullscreen().catch(function(){});
       destroyExistingInstance();
     }
@@ -1333,8 +1346,10 @@
     overlay.addEventListener('click', function(e){ if (e.target === overlay) closeFlipbook(); });
 
     gridBtn.addEventListener('click', function(){
-      gridPanel.classList.toggle('open');
-      gridBtn.classList.toggle('active', gridPanel.classList.contains('open'));
+      const opening = !gridPanel.classList.contains('open');
+      gridPanel.classList.toggle('open', opening);
+      gridPanel.style.display = opening ? 'block' : 'none';
+      gridBtn.classList.toggle('active', opening);
     });
     zoomInBtn.addEventListener('click', function(){ setZoom(0.15); });
     zoomOutBtn.addEventListener('click', function(){ setZoom(-0.15); });
