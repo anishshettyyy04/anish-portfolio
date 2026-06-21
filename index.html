@@ -1220,11 +1220,22 @@
         let pageW = availW, pageH = pageW / ratio;
         if (pageH > availH){ pageH = availH; pageW = pageH * ratio; }
 
+        // Belt-and-suspenders alongside autoSize:false — explicitly size the
+        // container itself before St.PageFlip ever touches it, so there's no
+        // ambiguity from inherited/leftover sizing on a fresh node.
+        container.style.width = Math.round(pageW) + 'px';
+        container.style.height = Math.round(pageH) + 'px';
+
         console.info('[flipbook] constructing St.PageFlip with', Math.round(pageW), 'x', Math.round(pageH));
         pageFlipInstance = new St.PageFlip(container, {
           width: Math.round(pageW),
           height: Math.round(pageH),
           size: 'fixed',
+          autoSize: false,   // we compute exact dimensions ourselves already —
+                              // autoSize defaults to true and was letting the
+                              // library resize the container based on its own
+                              // internal math, which degraded into a flat-grid
+                              // fallback layout on the second instantiation
           maxShadowOpacity: 0.5,
           showCover: true,
           usePortrait: false,
