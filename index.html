@@ -1227,9 +1227,9 @@
         const ratio = natural.w / natural.h;
         console.info('[flipbook] natural size resolved —', natural);
 
-        const widthRatio = window.innerWidth <= 640 ? 0.85 : 0.55;
+        const widthRatio = window.innerWidth <= 640 ? 0.85 : 0.65;
         const toolbarReserve = window.innerWidth <= 640 ? 150 : 170;
-        const availW = Math.min(window.innerWidth * widthRatio, 560);
+        const availW = Math.min(window.innerWidth * widthRatio, 680);
         const availH = window.innerHeight - toolbarReserve;
         let pageW = availW, pageH = pageW / ratio;
         if (pageH > availH){ pageH = availH; pageW = pageH * ratio; }
@@ -1251,8 +1251,10 @@
                               // internal math, which degraded into a flat-grid
                               // fallback layout on the second instantiation
           maxShadowOpacity: 0.5,
-          showCover: true,
-          usePortrait: false,
+          showCover: false,  // no special first-page treatment — every page
+                              // (including the first) behaves the same way
+          usePortrait: true, // always single-page view, never a two-page
+                              // spread — simpler and reads better for posters
           mobileScrollSupport: false
         });
         console.info('[flipbook] St.PageFlip constructed OK, calling loadFromImages');
