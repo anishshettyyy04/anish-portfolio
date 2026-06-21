@@ -96,7 +96,7 @@
     transition:transform 0.35s ease;
   }
   nav.nav-hidden{transform:translateY(-100%);}
-  .logo{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:18px;}
+  .logo{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:18px;text-decoration:none;cursor:pointer;display:inline-block;}
   .logo span{color:var(--accent);}
   .nav-links{display:flex;gap:36px;font-size:14px;color:var(--text-muted);}
   .nav-links a:hover{color:var(--text);}
@@ -387,6 +387,7 @@
     display:flex;flex-direction:column;
   }
   .flip-grid-thumb:hover{border-color:var(--accent);}
+  .flip-grid-thumb:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
   .flip-grid-thumb img{width:100%;display:block;object-fit:contain;background:#1a1a23;}
   .flip-grid-thumb .num{font-size:11px;color:var(--text-muted);text-align:center;padding:6px 0;font-family:'JetBrains Mono',monospace;}
 
@@ -417,6 +418,20 @@
     display:flex;align-items:center;gap:8px;
   }
   .achv-pill::before{content:'★';color:var(--accent);font-size:11px;}
+
+  /* ===== TESTIMONIALS ===== */
+  .testimonial-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;}
+  .testimonial-card{
+    background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    padding:28px 26px;position:relative;
+  }
+  .testimonial-quote-mark{
+    font-family:'Space Grotesk',sans-serif;font-size:42px;font-weight:700;
+    color:var(--accent);opacity:0.5;line-height:1;margin-bottom:6px;
+  }
+  .testimonial-quote{font-size:14.5px;line-height:1.7;color:var(--text);margin-bottom:18px;}
+  .testimonial-author{font-family:'Space Grotesk',sans-serif;font-weight:500;font-size:14px;}
+  .testimonial-role{font-size:12px;color:var(--text-muted);margin-top:2px;}
 
   /* ===== CONTACT ===== */
   .contact-box{
@@ -550,6 +565,11 @@
   .modal-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:24px;margin-top:10px;}
   .modal-meta{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-muted);margin-top:6px;}
   .modal-desc{font-size:14.5px;line-height:1.7;color:var(--text-muted);margin-top:18px;}
+  .modal-case-study{margin-top:22px;padding-top:20px;border-top:1px solid var(--line);}
+  .case-block{margin-bottom:16px;}
+  .case-block:last-child{margin-bottom:0;}
+  .case-label{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.08em;color:var(--accent-2);text-transform:uppercase;margin-bottom:6px;}
+  .case-text{font-size:13.5px;line-height:1.65;color:var(--text-muted);}
   .modal-links{display:flex;gap:12px;margin-top:24px;flex-wrap:wrap;}
   .modal-link{
     display:flex;align-items:center;gap:7px;
@@ -560,6 +580,8 @@
   .modal-link:hover{border-color:var(--accent);color:var(--accent-2);}
   .modal-link svg{width:13px;height:13px;flex-shrink:0;}
   [data-open]{cursor:pointer;}
+  [data-open]:focus-visible{outline:2px solid var(--accent);outline-offset:3px;}
+  a:focus-visible, button:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
 
   /* ============================================================
      RESPONSIVE — three real tiers, plus the existing max-width
@@ -648,7 +670,7 @@
 <body>
 
 <nav id="navbar">
-  <div class="logo">anish<span>.</span>shetty</div>
+  <a href="#" class="logo" id="logoHome">anish<span>.</span>shetty</a>
   <div class="nav-links">
     <a href="#work">Work</a>
     <a href="#video">Video</a>
@@ -788,6 +810,14 @@
   <div class="achv-row" id="achvList"></div>
 </div>
 
+<!-- TESTIMONIALS — hidden until at least one exists -->
+<div class="section bordered" id="testimonialsSection" style="display:none;">
+  <div class="label">testimonials</div>
+  <h2 class="display">What people say</h2>
+  <div class="ruler"><div class="ruler-line"></div></div>
+  <div class="testimonial-grid" id="testimonialGrid"></div>
+</div>
+
 <!-- CUSTOM SECTION — hidden by default, shown only if enabled + has cards -->
 <div class="section bordered" id="customSection" style="display:none;">
   <div class="label">notices</div>
@@ -831,6 +861,7 @@
       <div class="modal-title display" id="modalTitle"></div>
       <div class="modal-meta" id="modalMeta"></div>
       <p class="modal-desc" id="modalDesc"></p>
+      <div class="modal-case-study" id="modalCaseStudy" style="display:none;"></div>
       <div class="modal-links" id="modalLinks"></div>
     </div>
   </div>
@@ -968,6 +999,24 @@
       }
     });
   })();
+
+  // ===== KEYBOARD ACCESSIBILITY — Enter/Space activates any [data-open]
+  // element, exactly like clicking it. Uses delegation on document so it
+  // covers cards/tiles added later by Supabase data loads too, not just
+  // the ones present at page-load time. =====
+  document.addEventListener('keydown', function(e){
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const target = e.target.closest('[data-open], [data-page]');
+    if (!target) return;
+    e.preventDefault();
+    target.click();
+  });
+
+  // ===== LOGO — scrolls to top, never reloads the page =====
+  document.getElementById('logoHome').addEventListener('click', function(e){
+    e.preventDefault();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
 
   // ===== MOBILE HAMBURGER MENU =====
   (function(){
@@ -1121,7 +1170,7 @@
 
     function renderGridThumbs(pageUrls){
       gridInner.innerHTML = pageUrls.map(function(url, i){
-        return '<div class="flip-grid-thumb" data-page="' + i + '">' +
+        return '<div class="flip-grid-thumb" data-page="' + i + '" tabindex="0" role="button" aria-label="Go to page ' + (i+1) + '">' +
           '<img src="' + url + '" alt="page ' + (i+1) + '" loading="lazy">' +
           '<div class="num">' + (i+1) + '</div>' +
         '</div>';
@@ -1214,12 +1263,13 @@
     workData[p.id] = {
       tag: p.tag || '// code', title: p.title, meta: p.tech_stack || '',
       desc: p.description, mediaType: 'image', mediaUrl: p.cover_url,
-      links: p.github_url ? [{ label: 'GitHub', url: p.github_url, icon: 'github' }] : []
+      links: p.github_url ? [{ label: 'GitHub', url: p.github_url, icon: 'github' }] : [],
+      caseProblem: p.case_problem, caseBuilt: p.case_built, caseLearned: p.case_learned
     };
     const thumb = p.cover_url
       ? '<div class="project-thumb"><img src="' + p.cover_url + '" alt="' + escapeHtmlClient(p.title) + '" loading="lazy"></div>'
       : '<div class="project-thumb"></div>';
-    return '<div class="project-card" data-open data-id="' + p.id + '">' +
+    return '<div class="project-card" data-open data-id="' + p.id + '" tabindex="0" role="button" aria-label="View details for ' + escapeHtmlClient(p.title) + '">' +
       thumb +
       '<div class="project-body">' +
         '<div class="project-tag">' + (p.tag || '// code') + '</div>' +
@@ -1294,6 +1344,23 @@
     achv.innerHTML = achievements.map(function(e){
       return '<div class="achv-pill">' + e.role + (e.period && e.period !== '—' ? ' — ' + e.period : '') + '</div>';
     }).join('');
+  }
+
+  async function loadTestimonials(){
+    const { data, error } = await sb.from('testimonials').select('*').order('sort_order');
+    const section = document.getElementById('testimonialsSection');
+    if (error || !data || data.length === 0){ section.style.display = 'none'; return; }
+
+    document.getElementById('testimonialGrid').innerHTML = data.map(function(t){
+      return '<div class="testimonial-card">' +
+        '<div class="testimonial-quote-mark">"</div>' +
+        '<p class="testimonial-quote">' + escapeHtmlClient(t.quote) + '</p>' +
+        '<div class="testimonial-author">' + escapeHtmlClient(t.name) + '</div>' +
+        (t.role ? '<div class="testimonial-role">' + escapeHtmlClient(t.role) + '</div>' : '') +
+      '</div>';
+    }).join('');
+
+    section.style.display = 'block';
   }
 
   async function loadCustomSection(){
@@ -1458,7 +1525,7 @@
     } else if (item.isMultipage && item.pageUrls && item.pageUrls.length){
       mediaHtml = '<img src="' + item.pageUrls[0] + '" alt="' + (item.title || '') + '" loading="lazy">';
     }
-    return '<div class="sg-item' + portraitClass + '" data-open data-id="' + id + '">' +
+    return '<div class="sg-item' + portraitClass + '" data-open data-id="' + id + '" tabindex="0" role="button" aria-label="View ' + (item.title || 'item') + '">' +
       mediaHtml + '<div class="sg-tag">' + (item.sgTag || item.title) + '</div></div>';
   }
 
@@ -1571,6 +1638,7 @@
   loadProjects();
   loadSkills();
   loadExperience();
+  loadTestimonials();
   loadSettings();
   loadSocialLinks();
   loadCustomSection();
@@ -1615,6 +1683,24 @@
       titleEl.textContent = item.title;
       metaEl.textContent = item.meta;
       descEl.textContent = item.desc;
+
+      // case study — only shown if at least one of the three fields was
+      // actually filled in for this project; stays hidden otherwise
+      const caseEl = document.getElementById('modalCaseStudy');
+      const caseParts = [
+        { label: 'The problem', text: item.caseProblem },
+        { label: 'What I built', text: item.caseBuilt },
+        { label: 'What I learned', text: item.caseLearned }
+      ].filter(function(p){ return p.text; });
+
+      if (caseParts.length > 0){
+        caseEl.innerHTML = caseParts.map(function(p){
+          return '<div class="case-block"><div class="case-label">' + p.label + '</div><div class="case-text">' + escapeHtmlClient(p.text) + '</div></div>';
+        }).join('');
+        caseEl.style.display = 'block';
+      } else {
+        caseEl.style.display = 'none';
+      }
 
       // media area — sized to the REAL image ratio instead of a forced
       // 16:9 box, and hidden completely (no empty placeholder) when the
