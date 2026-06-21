@@ -303,6 +303,7 @@
     <div class="nav-item" data-panel="media"><span class="dot"></span><span class="label-text-nav">Media</span></div>
     <div class="nav-item" data-panel="skills"><span class="dot"></span><span class="label-text-nav">Skills</span></div>
     <div class="nav-item" data-panel="experience"><span class="dot"></span><span class="label-text-nav">Experience</span></div>
+    <div class="nav-item" data-panel="testimonials"><span class="dot"></span><span class="label-text-nav">Testimonials</span></div>
     <div class="nav-item" data-panel="custom"><span class="dot"></span><span class="label-text-nav">Custom Section</span></div>
     <div class="nav-item" data-panel="messages"><span class="dot"></span><span class="label-text-nav">Messages</span><span class="nav-badge" id="msgBadge" style="display:none;"></span></div>
     <div class="nav-item" data-panel="settings"><span class="dot"></span><span class="label-text-nav">Settings</span></div>
@@ -356,6 +357,17 @@
       <div class="add-btn" id="addExpBtn">+ Add new entry</div>
       <div id="expEditSlot"></div>
       <div id="expList"></div>
+    </div>
+
+    <!-- TESTIMONIALS PANEL -->
+    <div class="panel" id="panel-testimonials">
+      <div class="panel-header">
+        <h1 class="display">Testimonials</h1>
+        <p>Quotes from professors, clients, or collaborators — shown in their own section on the public site.</p>
+      </div>
+      <div class="add-btn" id="addTestimonialBtn">+ Add new testimonial</div>
+      <div id="testimonialEditSlot"></div>
+      <div id="testimonialList"></div>
     </div>
 
     <!-- CUSTOM SECTION PANEL -->
@@ -487,6 +499,7 @@
     initMediaPanel();
     initSkillsPanel();
     initExperiencePanel();
+    initTestimonialsPanel();
     initCustomSectionPanel();
     initMessagesPanel();
     initSettingsPanel();
@@ -537,7 +550,7 @@
 
     function renderForm(item){
       const isEdit = !!item;
-      item = item || { title:'', description:'', tech_stack:'', year:'', github_url:'', cover_url:'', sort_order: 0 };
+      item = item || { title:'', description:'', tech_stack:'', year:'', github_url:'', cover_url:'', case_problem:'', case_built:'', case_learned:'', sort_order: 0 };
 
       slotEl.innerHTML =
         '<div class="edit-card">' +
@@ -556,6 +569,14 @@
               '<div class="upload-progress" id="p_pcover"><div class="upload-progress-bar"></div></div>' +
               '</div>' +
             '</div>' +
+
+            '<div style="margin-top:8px;padding-top:18px;border-top:1px solid var(--line);">' +
+              '<div style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">Case study (optional) — shown below the description when someone opens this project. Leave blank to skip.</div>' +
+              '<div class="field"><label>The problem</label><textarea id="f_caseproblem" placeholder="What need or gap was this solving?">' + escapeHtml(item.case_problem) + '</textarea></div>' +
+              '<div class="field"><label>What I built</label><textarea id="f_casebuilt" placeholder="The actual approach/solution, briefly">' + escapeHtml(item.case_built) + '</textarea></div>' +
+              '<div class="field"><label>What I learned</label><textarea id="f_caselearned" placeholder="A real takeaway, technical or otherwise">' + escapeHtml(item.case_learned) + '</textarea></div>' +
+            '</div>' +
+
             '<div class="field"><label>Sort order (lower shows first)</label><input type="number" id="f_sort" value="' + (item.sort_order || 0) + '"></div>' +
           '</div>' +
           '<div class="form-actions">' +
@@ -576,6 +597,9 @@
           year: document.getElementById('f_year').value.trim(),
           github_url: document.getElementById('f_github').value.trim(),
           cover_url: pendingCoverUrl,
+          case_problem: document.getElementById('f_caseproblem').value.trim(),
+          case_built: document.getElementById('f_casebuilt').value.trim(),
+          case_learned: document.getElementById('f_caselearned').value.trim(),
           sort_order: parseInt(document.getElementById('f_sort').value) || 0
         };
         if (!payload.title){ showToast('Title is required', 'error'); return; }
@@ -840,6 +864,90 @@
     }
 
     document.getElementById('addExpBtn').addEventListener('click', function(){ renderForm(null); });
+    load();
+  }
+
+  // ===== TESTIMONIALS PANEL =====
+  function initTestimonialsPanel(){
+    const listEl = document.getElementById('testimonialList');
+    const slotEl = document.getElementById('testimonialEditSlot');
+
+    async function load(){
+      const { data, error } = await sb.from('testimonials').select('*').order('sort_order');
+      if (error){ listEl.innerHTML = '<div class="empty-state">Couldn\'t load testimonials. Run the latest migration if you haven\'t yet.</div>'; return; }
+      if (!data || data.length === 0){ listEl.innerHTML = '<div class="empty-state">No testimonials yet — add one above.</div>'; return; }
+
+      listEl.innerHTML = data.map(function(t){
+        return '<div class="item-row">' +
+          '<div class="info">' +
+            '<div class="title">' + escapeHtml(t.name) + (t.role ? ' — ' + escapeHtml(t.role) : '') + '</div>' +
+            '<div class="meta">' + escapeHtml((t.quote || '').slice(0, 90)) + (t.quote && t.quote.length > 90 ? '…' : '') + '</div>' +
+          '</div>' +
+          '<div class="actions">' +
+            '<button class="btn btn-secondary btn-sm" data-edit="' + t.id + '">Edit</button>' +
+            '<button class="btn btn-danger btn-sm" data-delete="' + t.id + '">Delete</button>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+
+      listEl.querySelectorAll('[data-edit]').forEach(function(b){
+        b.addEventListener('click', function(){
+          renderForm(data.find(function(t){ return t.id === b.getAttribute('data-edit'); }));
+        });
+      });
+      listEl.querySelectorAll('[data-delete]').forEach(function(b){
+        b.addEventListener('click', async function(){
+          if (!confirm('Delete this testimonial?')) return;
+          const { error } = await sb.from('testimonials').delete().eq('id', b.getAttribute('data-delete'));
+          if (error){ showToast('Delete failed: ' + error.message, 'error'); return; }
+          showToast('Testimonial deleted', 'success');
+          load();
+        });
+      });
+    }
+
+    function renderForm(item){
+      const isEdit = !!item;
+      item = item || { quote:'', name:'', role:'', sort_order:0 };
+
+      slotEl.innerHTML =
+        '<div class="edit-card">' +
+          '<div class="form-grid">' +
+            '<div class="field"><label>Quote</label><textarea id="f_quote" style="min-height:90px;">' + escapeHtml(item.quote) + '</textarea></div>' +
+            '<div class="form-grid two-col">' +
+              '<div class="field"><label>Name</label><input type="text" id="f_name" value="' + escapeAttr(item.name) + '"></div>' +
+              '<div class="field"><label>Role (optional, e.g. "Professor, MITE")</label><input type="text" id="f_role" value="' + escapeAttr(item.role) + '"></div>' +
+            '</div>' +
+            '<div class="field"><label>Sort order</label><input type="number" id="f_sort" value="' + (item.sort_order||0) + '"></div>' +
+          '</div>' +
+          '<div class="form-actions">' +
+            '<button class="btn btn-primary" id="f_save">' + (isEdit ? 'Save Changes' : 'Add Testimonial') + '</button>' +
+            '<button class="btn btn-secondary" id="f_cancel">Cancel</button>' +
+          '</div>' +
+        '</div>';
+
+      document.getElementById('f_cancel').addEventListener('click', function(){ slotEl.innerHTML = ''; });
+      document.getElementById('f_save').addEventListener('click', async function(){
+        const payload = {
+          quote: document.getElementById('f_quote').value.trim(),
+          name: document.getElementById('f_name').value.trim(),
+          role: document.getElementById('f_role').value.trim(),
+          sort_order: parseInt(document.getElementById('f_sort').value) || 0
+        };
+        if (!payload.quote || !payload.name){ showToast('Quote and name are both required', 'error'); return; }
+
+        const { error } = isEdit
+          ? await sb.from('testimonials').update(payload).eq('id', item.id)
+          : await sb.from('testimonials').insert(payload);
+
+        if (error){ showToast('Save failed: ' + error.message, 'error'); return; }
+        showToast(isEdit ? 'Testimonial updated' : 'Testimonial added', 'success');
+        slotEl.innerHTML = '';
+        load();
+      });
+    }
+
+    document.getElementById('addTestimonialBtn').addEventListener('click', function(){ renderForm(null); });
     load();
   }
 
