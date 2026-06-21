@@ -1088,6 +1088,7 @@
         '</div>' +
 
         '<div class="field"><label>Hero eyebrow text (small line above your name)</label><input type="text" id="s_eyebrow" value="' + escapeAttr(data.hero_eyebrow) + '"></div>' +
+        '<div class="field"><label>Hero status line (e.g. "Open to internships" — leave blank to hide)</label><input type="text" id="s_herostatus" value="' + escapeAttr(data.hero_status) + '"></div>' +
         '<div class="field"><label>Hero tagline</label><textarea id="s_tagline">' + escapeHtml(data.hero_tagline) + '</textarea></div>' +
         '<div class="field"><label>About / summary text</label><textarea id="s_summary" style="min-height:120px;">' + escapeHtml(data.summary_text) + '</textarea></div>' +
 
@@ -1136,6 +1137,7 @@
           announcement_link_label: document.getElementById('s_announceLabel').value.trim(),
           announcement_link_url: document.getElementById('s_announceUrl').value.trim(),
           hero_eyebrow: document.getElementById('s_eyebrow').value.trim(),
+          hero_status: document.getElementById('s_herostatus').value.trim(),
           hero_tagline: document.getElementById('s_tagline').value.trim(),
           summary_text: document.getElementById('s_summary').value.trim()
         };
