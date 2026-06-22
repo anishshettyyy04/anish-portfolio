@@ -550,6 +550,42 @@
     .carousel-arrow{width:32px;height:32px;font-size:14px;}
   }
 
+  /* ===== SLIDES / GALLERY — large, full-bleed, media-only auto-slideshow ===== */
+  .slideshow{
+    position:relative;border-radius:16px;overflow:hidden;
+    border:1px solid var(--line);
+    aspect-ratio:16/8;background:var(--placeholder-grad);
+  }
+  .slideshow-track{
+    display:flex;width:100%;height:100%;
+    transition:transform 0.5s cubic-bezier(.4,0,.2,1);
+  }
+  .slideshow-slide{
+    flex:0 0 100%;min-width:0;position:relative;
+    background:var(--placeholder-grad);
+  }
+  .slideshow-slide img,.slideshow-slide video{
+    width:100%;height:100%;object-fit:cover;display:block;
+  }
+  .slideshow-tag{
+    position:absolute;bottom:16px;left:16px;z-index:2;
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+    color:var(--accent-2);background:rgba(10,10,13,0.7);
+    padding:5px 11px;border-radius:6px;border:1px solid var(--line);
+  }
+  .slideshow-mute{
+    position:absolute;bottom:16px;right:16px;z-index:3;
+    width:34px;height:34px;border-radius:50%;
+    background:rgba(10,10,13,0.7);border:1px solid var(--line);color:var(--text);
+    display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;
+    transition:border-color .2s;
+  }
+  .slideshow-mute:hover{border-color:var(--accent);}
+
+  @media (max-width:760px){
+    .slideshow{aspect-ratio:9/12;}
+  }
+
   /* ===== CONTACT ===== */
   .contact-box{
     background:var(--surface);border:1px solid var(--line);border-radius:16px;
@@ -946,19 +982,28 @@
   <div class="testimonial-grid" id="testimonialGrid"></div>
 </div>
 
-<!-- CUSTOM SECTION — hidden by default, shown only if enabled + has cards.
-     Renders as an auto-sliding carousel (one card visible at a time). -->
+<!-- CUSTOM SECTION (Notices) — hidden by default, shown only if enabled + has cards -->
 <div class="section bordered" id="customSection" style="display:none;">
   <div class="label" id="customSectionLabel">notices</div>
   <h2 class="display" id="customSectionTitle">Notices</h2>
   <p class="body" id="customSectionSubtitle" style="display:none;"></p>
   <div class="ruler"><div class="ruler-line"></div></div>
+  <div class="smart-grid" id="customGrid"></div>
+</div>
 
-  <div class="carousel" id="customCarousel">
-    <div class="carousel-track" id="customCarouselTrack"></div>
-    <button class="carousel-arrow carousel-arrow-prev" id="customCarouselPrev" aria-label="Previous">‹</button>
-    <button class="carousel-arrow carousel-arrow-next" id="customCarouselNext" aria-label="Next">›</button>
-    <div class="carousel-dots" id="customCarouselDots"></div>
+<!-- SLIDES — full-bleed auto-sliding gallery, media only, hidden by default -->
+<div class="section bordered" id="slidesSection" style="display:none;">
+  <div class="label" id="slidesLabel">gallery</div>
+  <h2 class="display" id="slidesHeading">Slides</h2>
+  <p class="body" id="slidesSubtitle" style="display:none;"></p>
+  <div class="ruler"><div class="ruler-line"></div></div>
+
+  <div class="slideshow" id="slideshowEl">
+    <div class="slideshow-track" id="slideshowTrack"></div>
+    <button class="carousel-arrow carousel-arrow-prev" id="slideshowPrev" aria-label="Previous">‹</button>
+    <button class="carousel-arrow carousel-arrow-next" id="slideshowNext" aria-label="Next">›</button>
+    <button class="slideshow-mute" id="slideshowMute" aria-label="Unmute" style="display:none;">🔇</button>
+    <div class="carousel-dots" id="slideshowDots"></div>
   </div>
 </div>
 
@@ -1611,12 +1656,13 @@
       subEl.style.display = 'block';
     }
 
-    // Register every card into workData so clicking a slide still opens
-    // the same work-detail modal/player used everywhere else on the site.
+    // Register every card into workData and hand the ids to the SAME
+    // auto-layout grid engine Videography/Design use — 1 item centers,
+    // 2 sit side by side, 3 becomes featured+stacked, and so on.
     const ids = data.map(function(c){
       const id = 'custom-' + c.id;
       workData[id] = {
-        tag: '// notice', title: c.title, sgTag: c.title, meta: '',
+        tag: '', title: c.title, sgTag: c.title, meta: '',
         desc: c.description || '',
         mediaType: c.media_type === 'video' && c.media_url ? 'video' : 'image',
         mediaUrl: c.media_type === 'video' ? c.media_url : null,
@@ -1626,39 +1672,67 @@
       return id;
     });
 
-    buildCarousel(data, ids);
+    renderGrid(document.getElementById('customGrid'), ids);
     section.style.display = 'block';
   }
 
-  // Auto-sliding carousel for the Custom Section — one slide visible at a
-  // time, advances automatically every few seconds, pauses while a visitor
-  // is actively interacting with it (hovering, or has focused a control).
-  function buildCarousel(items, ids){
-    const track = document.getElementById('customCarouselTrack');
-    const dotsEl = document.getElementById('customCarouselDots');
-    const prevBtn = document.getElementById('customCarouselPrev');
-    const nextBtn = document.getElementById('customCarouselNext');
-    const carouselEl = document.getElementById('customCarousel');
+  async function loadSlides(){
+    const { data: settings, error: settingsError } = await sb.from('site_settings')
+      .select('slides_enabled, slides_label, slides_heading, slides_subtitle').eq('id', 1).single();
+    const section = document.getElementById('slidesSection');
 
-    track.innerHTML = items.map(function(c, i){
-      const id = ids[i];
-      const item = workData[id];
-      const mediaHtml = item.coverUrl
-        ? '<img src="' + item.coverUrl + '" alt="' + escapeHtmlClient(c.title) + '" loading="lazy">'
-        : '';
-      return '<div class="carousel-slide" data-open data-id="' + id + '" tabindex="0" role="button" aria-label="View ' + escapeHtmlClient(c.title) + '">' +
-        '<div class="carousel-slide-inner">' +
-          '<div class="carousel-slide-media">' + mediaHtml + '</div>' +
-          '<div class="carousel-slide-body">' +
-            '<div class="carousel-slide-title">' + escapeHtmlClient(c.title) + '</div>' +
-            (c.description ? '<div class="carousel-slide-desc">' + escapeHtmlClient(c.description) + '</div>' : '') +
-          '</div>' +
-        '</div>' +
+    if (settingsError || !settings || !settings.slides_enabled){
+      section.style.display = 'none';
+      return;
+    }
+
+    const { data, error } = await sb.from('slides_items').select('*').order('sort_order');
+    if (error || !data || data.length === 0){
+      section.style.display = 'none';
+      return;
+    }
+
+    document.getElementById('slidesLabel').textContent = settings.slides_label || 'gallery';
+    document.getElementById('slidesHeading').textContent = settings.slides_heading || 'Slides';
+    const subEl = document.getElementById('slidesSubtitle');
+    if (settings.slides_subtitle){
+      subEl.textContent = settings.slides_subtitle;
+      subEl.style.display = 'block';
+    }
+
+    buildSlideshow(data);
+    section.style.display = 'block';
+  }
+
+  // Full-bleed auto-advancing slideshow. Media only — no title/description
+  // shown on the slide itself, just a small corner tag like the Videography
+  // and Design grid tiles use. Video slides play with sound on hover and
+  // pause on mouse-leave; a mute button lets a visitor silence audio while
+  // still watching, and the next auto-advance always resets to muted so the
+  // page never autoplays sound on its own.
+  function buildSlideshow(items){
+    const track = document.getElementById('slideshowTrack');
+    const dotsEl = document.getElementById('slideshowDots');
+    const prevBtn = document.getElementById('slideshowPrev');
+    const nextBtn = document.getElementById('slideshowNext');
+    const muteBtn = document.getElementById('slideshowMute');
+    const slideshowEl = document.getElementById('slideshowEl');
+
+    track.innerHTML = items.map(function(s){
+      const isVideo = s.media_type === 'video' && s.media_url;
+      let mediaHtml;
+      if (isVideo){
+        const poster = s.cover_url ? ' poster="' + s.cover_url + '"' : '';
+        mediaHtml = '<video src="' + s.media_url + '"' + poster + ' muted loop playsinline preload="metadata"></video>';
+      } else {
+        mediaHtml = '<img src="' + (s.cover_url || s.media_url || '') + '" alt="' + escapeHtmlClient(s.title || '') + '" loading="lazy">';
+      }
+      return '<div class="slideshow-slide" data-video="' + (isVideo ? '1' : '0') + '">' +
+        mediaHtml +
+        (s.title ? '<div class="slideshow-tag">' + escapeHtmlClient(s.title) + '</div>' : '') +
       '</div>';
     }).join('');
-    attachOpenHandlers(track);
 
-    // single-slide carousels don't need any controls at all
     const showControls = items.length > 1;
     prevBtn.style.display = showControls ? 'flex' : 'none';
     nextBtn.style.display = showControls ? 'flex' : 'none';
@@ -1670,14 +1744,31 @@
 
     let current = 0;
     let autoTimer = null;
-    const AUTO_DELAY = 4500;
+    let isMuted = true;
+    const AUTO_DELAY = 5000;
+    const slideEls = function(){ return track.querySelectorAll('.slideshow-slide'); };
+
+    function pauseAllVideos(){
+      slideEls().forEach(function(el){
+        const v = el.querySelector('video');
+        if (v){ v.pause(); v.currentTime = 0; }
+      });
+    }
 
     function goTo(index){
+      pauseAllVideos();
       current = (index + items.length) % items.length;
       track.style.transform = 'translateX(-' + (current * 100) + '%)';
       dotsEl.querySelectorAll('.carousel-dot').forEach(function(d, i){
         d.classList.toggle('active', i === current);
       });
+      updateMuteButtonVisibility();
+    }
+
+    function updateMuteButtonVisibility(){
+      const activeSlide = slideEls()[current];
+      const isVideo = activeSlide && activeSlide.getAttribute('data-video') === '1';
+      muteBtn.style.display = isVideo ? 'flex' : 'none';
     }
 
     function startAuto(){
@@ -1696,12 +1787,26 @@
       dot.addEventListener('click', function(){ goTo(parseInt(dot.getAttribute('data-slide'))); startAuto(); });
     });
 
-    // pause on hover/focus so a visitor reading a slide doesn't get
-    // interrupted mid-read, resume once they move away
-    carouselEl.addEventListener('mouseenter', stopAuto);
-    carouselEl.addEventListener('mouseleave', startAuto);
-    carouselEl.addEventListener('focusin', stopAuto);
-    carouselEl.addEventListener('focusout', startAuto);
+    // hover-to-play with sound on the currently visible video slide
+    slideshowEl.addEventListener('mouseenter', function(){
+      stopAuto();
+      const activeSlide = slideEls()[current];
+      const v = activeSlide && activeSlide.querySelector('video');
+      if (v){ v.muted = isMuted; v.play().catch(function(){}); }
+    });
+    slideshowEl.addEventListener('mouseleave', function(){
+      pauseAllVideos();
+      startAuto();
+    });
+
+    muteBtn.addEventListener('click', function(){
+      isMuted = !isMuted;
+      muteBtn.textContent = isMuted ? '🔇' : '🔊';
+      muteBtn.setAttribute('aria-label', isMuted ? 'Unmute' : 'Mute');
+      const activeSlide = slideEls()[current];
+      const v = activeSlide && activeSlide.querySelector('video');
+      if (v) v.muted = isMuted;
+    });
 
     goTo(0);
     startAuto();
@@ -1939,6 +2044,38 @@
   loadSettings();
   loadSocialLinks();
   loadCustomSection();
+  // ===== SECTION REORDERING =====
+  // Reads the admin-defined order and physically re-appends each section
+  // element in that sequence. Re-appending an existing node moves it rather
+  // than duplicating it, so iterating in sorted order naturally produces
+  // the correct final layout. Runs once, early, before section content
+  // finishes loading — visible sections may briefly show in their default
+  // order while this resolves, then settle into the chosen order.
+  const SECTION_ID_MAP = {
+    projects: 'work',
+    video: 'video',
+    design: 'design',
+    experience: 'experience',
+    testimonials: 'testimonialsSection',
+    notices: 'customSection',
+    slides: 'slidesSection',
+    contact: 'contact'
+  };
+
+  async function applySectionOrder(){
+    const { data, error } = await sb.from('section_order').select('*').order('sort_order');
+    if (error || !data || data.length === 0) return; // keep the page's built-in default order
+
+    const main = document.querySelector('main');
+    data.forEach(function(row){
+      const elId = SECTION_ID_MAP[row.section_key];
+      const el = elId && document.getElementById(elId);
+      if (el) main.appendChild(el);
+    });
+  }
+
+  applySectionOrder();
+  loadSlides();
 
   // ===== WORK DETAIL MODAL =====
   (function(){
