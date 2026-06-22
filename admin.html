@@ -305,6 +305,7 @@
     <div class="nav-item" data-panel="experience"><span class="dot"></span><span class="label-text-nav">Experience</span></div>
     <div class="nav-item" data-panel="testimonials"><span class="dot"></span><span class="label-text-nav">Testimonials</span></div>
     <div class="nav-item" data-panel="custom"><span class="dot"></span><span class="label-text-nav">Custom Section</span></div>
+    <div class="nav-item" data-panel="slides"><span class="dot"></span><span class="label-text-nav">Slides</span></div>
     <div class="nav-item" data-panel="messages"><span class="dot"></span><span class="label-text-nav">Messages</span><span class="nav-badge" id="msgBadge" style="display:none;"></span></div>
     <div class="nav-item" data-panel="settings"><span class="dot"></span><span class="label-text-nav">Settings</span></div>
     <div class="sidebar-footer">
@@ -392,6 +393,28 @@
       <div id="customList"></div>
     </div>
 
+    <!-- SLIDES PANEL -->
+    <div class="panel" id="panel-slides">
+      <div class="panel-header">
+        <h1 class="display">Slides</h1>
+        <p>A large, full-width auto-sliding gallery — pictures or videos only, no title or description on the slide itself, just a small corner tag. Hidden until you turn it on and add at least one slide.</p>
+      </div>
+      <div class="toggle-row" style="margin-bottom:24px;">
+        <div><div class="label-text">Show this section on the public site</div><div class="label-sub">Turns the whole section on/off</div></div>
+        <label class="switch"><input type="checkbox" id="slidesEnabledToggle"><span class="slider"></span></label>
+      </div>
+      <div class="form-grid two-col" style="margin-bottom:24px;">
+        <div class="field"><label>Section label (small text above the heading)</label><input type="text" id="slidesSectionLabel" placeholder="e.g. gallery"></div>
+        <div class="field"><label>Section title</label><input type="text" id="slidesSectionHeading" placeholder="e.g. Slides"></div>
+      </div>
+      <div class="field" style="margin-bottom:24px;"><label>Subtitle (optional)</label><input type="text" id="slidesSectionSubtitle" placeholder="Short description shown under the title"></div>
+      <button class="btn btn-secondary btn-sm" id="saveSlidesMetaBtn" style="margin-bottom:28px;">Save Title & Toggle</button>
+
+      <div class="add-btn" id="addSlideBtn">+ Add new slide</div>
+      <div id="slideEditSlot"></div>
+      <div id="slideList"></div>
+    </div>
+
     <!-- MESSAGES PANEL -->
     <div class="panel" id="panel-messages">
       <div class="panel-header">
@@ -415,6 +438,12 @@
         <div class="add-btn" id="addLinkBtn">+ Add new link</div>
         <div id="linkEditSlot"></div>
         <div id="linkList"></div>
+      </div>
+
+      <div style="margin-top:40px;padding-top:32px;border-top:1px solid var(--line);">
+        <h1 class="display" style="font-size:20px;margin-bottom:6px;">Section Order</h1>
+        <p style="font-size:13.5px;color:var(--text-muted);margin-bottom:20px;">Controls the order sections appear in on the public site, from Projects down to Contact. Use the arrows to move a section up or down.</p>
+        <div id="sectionOrderList"></div>
       </div>
     </div>
 
@@ -502,9 +531,11 @@
     initExperiencePanel();
     initTestimonialsPanel();
     initCustomSectionPanel();
+    initSlidesPanel();
     initMessagesPanel();
     initSettingsPanel();
     initSocialLinksPanel();
+    initSectionOrderPanel();
   }
 
   // ===== PROJECTS PANEL =====
@@ -1095,6 +1126,180 @@
     load();
   }
 
+  // ===== SLIDES PANEL =====
+  function initSlidesPanel(){
+    const listEl = document.getElementById('slideList');
+    const slotEl = document.getElementById('slideEditSlot');
+
+    async function loadMeta(){
+      const { data, error } = await sb.from('site_settings').select('*').eq('id', 1).single();
+      if (error || !data) return;
+      document.getElementById('slidesEnabledToggle').checked = !!data.slides_enabled;
+      document.getElementById('slidesSectionLabel').value = data.slides_label || '';
+      document.getElementById('slidesSectionHeading').value = data.slides_heading || '';
+      document.getElementById('slidesSectionSubtitle').value = data.slides_subtitle || '';
+    }
+
+    document.getElementById('saveSlidesMetaBtn').addEventListener('click', async function(){
+      const payload = {
+        slides_enabled: document.getElementById('slidesEnabledToggle').checked,
+        slides_label: document.getElementById('slidesSectionLabel').value.trim(),
+        slides_heading: document.getElementById('slidesSectionHeading').value.trim(),
+        slides_subtitle: document.getElementById('slidesSectionSubtitle').value.trim()
+      };
+      const { error } = await sb.from('site_settings').update(payload).eq('id', 1);
+      if (error){ showToast('Save failed: ' + error.message, 'error'); return; }
+      showToast('Saved', 'success');
+    });
+
+    async function load(){
+      const { data, error } = await sb.from('slides_items').select('*').order('sort_order');
+      if (error){ listEl.innerHTML = '<div class="empty-state">Couldn\'t load slides. Run the latest migration if you haven\'t yet.</div>'; return; }
+      if (!data || data.length === 0){ listEl.innerHTML = '<div class="empty-state">No slides yet — add one above.</div>'; return; }
+
+      listEl.innerHTML = data.map(function(s, i){
+        return '<div class="item-row">' +
+          '<div class="info">' +
+            '<div class="title">' + escapeHtml(s.title || '(untitled tag)') + '</div>' +
+            '<div class="meta">' + s.media_type + ' · position ' + (i+1) + ' of ' + data.length + '</div>' +
+          '</div>' +
+          '<div class="actions">' +
+            '<button class="btn btn-secondary btn-sm" data-up="' + s.id + '"' + (i===0?' disabled':'') + '>↑</button>' +
+            '<button class="btn btn-secondary btn-sm" data-down="' + s.id + '"' + (i===data.length-1?' disabled':'') + '>↓</button>' +
+            '<button class="btn btn-secondary btn-sm" data-edit="' + s.id + '">Edit</button>' +
+            '<button class="btn btn-danger btn-sm" data-delete="' + s.id + '">Delete</button>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+
+      listEl.querySelectorAll('[data-edit]').forEach(function(b){
+        b.addEventListener('click', function(){
+          renderForm(data.find(function(s){ return s.id === b.getAttribute('data-edit'); }));
+        });
+      });
+      listEl.querySelectorAll('[data-delete]').forEach(function(b){
+        b.addEventListener('click', async function(){
+          if (!confirm('Delete this slide?')) return;
+          const { error } = await sb.from('slides_items').delete().eq('id', b.getAttribute('data-delete'));
+          if (error){ showToast('Delete failed: ' + error.message, 'error'); return; }
+          showToast('Slide deleted', 'success');
+          load();
+        });
+      });
+      listEl.querySelectorAll('[data-up]').forEach(function(b){
+        b.addEventListener('click', async function(){ await swapOrder(data, b.getAttribute('data-up'), -1); });
+      });
+      listEl.querySelectorAll('[data-down]').forEach(function(b){
+        b.addEventListener('click', async function(){ await swapOrder(data, b.getAttribute('data-down'), 1); });
+      });
+    }
+
+    async function swapOrder(list, id, direction){
+      const idx = list.findIndex(function(s){ return s.id === id; });
+      const swapIdx = idx + direction;
+      if (swapIdx < 0 || swapIdx >= list.length) return;
+      const a = list[idx], b = list[swapIdx];
+      await sb.from('slides_items').update({ sort_order: b.sort_order }).eq('id', a.id);
+      await sb.from('slides_items').update({ sort_order: a.sort_order }).eq('id', b.id);
+      load();
+    }
+
+    function renderForm(item){
+      const isEdit = !!item;
+      item = item || { title:'', media_type:'image', media_url:'', cover_url:'', link_label:'', link_url:'', sort_order:0 };
+
+      slotEl.innerHTML =
+        '<div class="edit-card">' +
+          '<div class="form-grid">' +
+            '<div class="field"><label>Tag (small corner label — optional, leave blank for none)</label><input type="text" id="f_title" value="' + escapeAttr(item.title) + '" placeholder="e.g. aftermovie · techfest"></div>' +
+            '<div class="field"><label>Media type</label>' +
+              '<select id="f_mediatype">' +
+                '<option value="image"' + (item.media_type==='image'?' selected':'') + '>Image</option>' +
+                '<option value="video"' + (item.media_type==='video'?' selected':'') + '>Video</option>' +
+              '</select>' +
+            '</div>' +
+            '<div id="slideSingleWrap" style="display:' + (item.media_type==='image'?'block':'none') + ';">' +
+              '<div class="field"><label>Image</label>' +
+                '<div class="drop-zone" id="dz_slideimg">Click or drag an image here' +
+                (item.media_type==='image' && item.media_url ? '<div class="file-preview">Current: ' + item.media_url.split('/').pop() + '</div>' : '') +
+                '<input type="file" id="f_slideimgfile" accept="image/*">' +
+                '<div class="upload-progress" id="p_slideimg"><div class="upload-progress-bar"></div></div>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+            '<div id="slideVideoWrap" style="display:' + (item.media_type==='video'?'block':'none') + ';">' +
+              '<div class="field"><label>Video file</label>' +
+                '<div class="drop-zone" id="dz_slidevideo">Click or drag a video here' +
+                (item.media_type==='video' && item.media_url ? '<div class="file-preview">Current: ' + item.media_url.split('/').pop() + '</div>' : '') +
+                '<input type="file" id="f_slidevideofile" accept="video/*">' +
+                '<div class="upload-progress" id="p_slidevideo"><div class="upload-progress-bar"></div></div>' +
+                '</div>' +
+              '</div>' +
+              '<div class="field"><label>Poster image (optional — shown before the video plays)</label>' +
+                '<div class="drop-zone" id="dz_slideposter">Click or drag a poster image here' +
+                (item.cover_url ? '<div class="file-preview">Current: ' + item.cover_url.split('/').pop() + '</div>' : '') +
+                '<input type="file" id="f_slideposterfile" accept="image/*">' +
+                '<div class="upload-progress" id="p_slideposter"><div class="upload-progress-bar"></div></div>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+            '<div class="form-grid two-col"><div class="field"><label>Button label (optional)</label><input type="text" id="f_linklabel" value="' + escapeAttr(item.link_label) + '"></div><div class="field"><label>Button URL (optional)</label><input type="text" id="f_linkurl" value="' + escapeAttr(item.link_url) + '"></div></div>' +
+          '</div>' +
+          '<div class="form-actions">' +
+            '<button class="btn btn-primary" id="f_save">' + (isEdit ? 'Save Changes' : 'Add Slide') + '</button>' +
+            '<button class="btn btn-secondary" id="f_cancel">Cancel</button>' +
+          '</div>' +
+        '</div>';
+
+      let pendingMediaUrl = item.media_type === 'image' ? (item.media_url || '') : (item.media_type === 'video' ? '' : '');
+      let pendingVideoUrl = item.media_type === 'video' ? (item.media_url || '') : '';
+      let pendingPosterUrl = item.cover_url || '';
+
+      setupSingleUpload('dz_slideimg', 'f_slideimgfile', 'p_slideimg', function(url){ pendingMediaUrl = url; });
+      setupSingleUpload('dz_slidevideo', 'f_slidevideofile', 'p_slidevideo', function(url){ pendingVideoUrl = url; });
+      setupSingleUpload('dz_slideposter', 'f_slideposterfile', 'p_slideposter', function(url){ pendingPosterUrl = url; });
+
+      document.getElementById('f_mediatype').addEventListener('change', function(e){
+        const isVideo = e.target.value === 'video';
+        document.getElementById('slideSingleWrap').style.display = isVideo ? 'none' : 'block';
+        document.getElementById('slideVideoWrap').style.display = isVideo ? 'block' : 'none';
+      });
+
+      document.getElementById('f_cancel').addEventListener('click', function(){ slotEl.innerHTML = ''; });
+      document.getElementById('f_save').addEventListener('click', async function(){
+        const mediaType = document.getElementById('f_mediatype').value;
+        const payload = {
+          title: document.getElementById('f_title').value.trim(),
+          media_type: mediaType,
+          media_url: mediaType === 'video' ? pendingVideoUrl : pendingMediaUrl,
+          cover_url: mediaType === 'video' ? pendingPosterUrl : null,
+          link_label: document.getElementById('f_linklabel').value.trim(),
+          link_url: document.getElementById('f_linkurl').value.trim(),
+          sort_order: item.sort_order || 0
+        };
+        if (!payload.media_url){ showToast('Please upload a file first', 'error'); return; }
+
+        if (!isEdit){
+          const { data: maxRow } = await sb.from('slides_items').select('sort_order').order('sort_order', { ascending: false }).limit(1);
+          payload.sort_order = maxRow && maxRow.length ? maxRow[0].sort_order + 1 : 1;
+        }
+
+        const { error } = isEdit
+          ? await sb.from('slides_items').update(payload).eq('id', item.id)
+          : await sb.from('slides_items').insert(payload);
+
+        if (error){ showToast('Save failed: ' + error.message, 'error'); return; }
+        showToast(isEdit ? 'Slide updated' : 'Slide added', 'success');
+        slotEl.innerHTML = '';
+        load();
+      });
+    }
+
+    document.getElementById('addSlideBtn').addEventListener('click', function(){ renderForm(null); });
+    loadMeta();
+    load();
+  }
+
   // ===== MESSAGES PANEL =====
   function initMessagesPanel(){
     const listEl = document.getElementById('messagesList');
@@ -1398,6 +1603,55 @@
     }
 
     document.getElementById('addLinkBtn').addEventListener('click', function(){ renderForm(null); });
+    load();
+  }
+
+  // ===== SECTION ORDER PANEL =====
+  const SECTION_DISPLAY_NAMES = {
+    projects: 'Projects', video: 'Videography', design: 'Graphic Design',
+    experience: 'Experience & Recognition', testimonials: 'Testimonials',
+    notices: 'Notices (Custom Section)', slides: 'Slides', contact: 'Contact'
+  };
+
+  function initSectionOrderPanel(){
+    const listEl = document.getElementById('sectionOrderList');
+
+    async function load(){
+      const { data, error } = await sb.from('section_order').select('*').order('sort_order');
+      if (error){ listEl.innerHTML = '<div class="empty-state">Couldn\'t load section order. Run the latest migration if you haven\'t yet.</div>'; return; }
+      if (!data || data.length === 0){ listEl.innerHTML = '<div class="empty-state">No order set yet — run the migration to seed the default order.</div>'; return; }
+
+      listEl.innerHTML = data.map(function(s, i){
+        const name = SECTION_DISPLAY_NAMES[s.section_key] || s.section_key;
+        return '<div class="item-row">' +
+          '<div class="info"><div class="title">' + (i+1) + '. ' + name + '</div></div>' +
+          '<div class="actions">' +
+            '<button class="btn btn-secondary btn-sm" data-up="' + s.section_key + '"' + (i===0?' disabled':'') + '>↑</button>' +
+            '<button class="btn btn-secondary btn-sm" data-down="' + s.section_key + '"' + (i===data.length-1?' disabled':'') + '>↓</button>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+
+      listEl.querySelectorAll('[data-up]').forEach(function(b){
+        b.addEventListener('click', function(){ swapOrder(data, b.getAttribute('data-up'), -1); });
+      });
+      listEl.querySelectorAll('[data-down]').forEach(function(b){
+        b.addEventListener('click', function(){ swapOrder(data, b.getAttribute('data-down'), 1); });
+      });
+    }
+
+    async function swapOrder(list, key, direction){
+      const idx = list.findIndex(function(s){ return s.section_key === key; });
+      const swapIdx = idx + direction;
+      if (swapIdx < 0 || swapIdx >= list.length) return;
+      const a = list[idx], b = list[swapIdx];
+      const { error: e1 } = await sb.from('section_order').update({ sort_order: b.sort_order }).eq('section_key', a.section_key);
+      const { error: e2 } = await sb.from('section_order').update({ sort_order: a.sort_order }).eq('section_key', b.section_key);
+      if (e1 || e2){ showToast('Failed to reorder', 'error'); return; }
+      showToast('Section order updated — refresh the public site to see it', 'success');
+      load();
+    }
+
     load();
   }
 
