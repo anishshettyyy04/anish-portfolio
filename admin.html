@@ -660,6 +660,61 @@
   }
   function escapeAttr(str){ return escapeHtml(str); }
 
+  // Grabs a single frame from a video File and returns it as an image Blob.
+  // Used to auto-generate a cover thumbnail when the admin doesn't upload
+  // one manually — works entirely in the browser, no server involved.
+  function extractVideoFrame(file, atSeconds){
+    return new Promise(function(resolve, reject){
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      video.muted = true;
+      video.playsInline = true;
+      const url = URL.createObjectURL(file);
+      video.src = url;
+
+      video.addEventListener('loadeddata', function(){
+        const seekTo = Math.min(atSeconds || 1, Math.max(video.duration - 0.1, 0));
+        video.currentTime = seekTo;
+      });
+      video.addEventListener('seeked', function(){
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(function(blob){
+          URL.revokeObjectURL(url);
+          if (blob) resolve(blob); else reject(new Error('Canvas produced no image data'));
+        }, 'image/jpeg', 0.85);
+      });
+      video.addEventListener('error', function(){
+        URL.revokeObjectURL(url);
+        reject(new Error('Could not read this video file'));
+      });
+    });
+  }
+
+  // Auto-generates a cover thumbnail from an already-uploaded media file and
+  // uploads that thumbnail to storage too, returning its public URL. For
+  // images, the original file doubles as its own thumbnail (no extra work
+  // needed) — for videos, a real frame is extracted first.
+  async function autoGenerateCover(file, isVideo){
+    try {
+      let blob = file;
+      if (isVideo){
+        blob = await extractVideoFrame(file, 1);
+      }
+      const path = 'media/auto-cover-' + Date.now() + '-' + Math.random().toString(36).slice(2,8) + '.jpg';
+      const { error } = await sb.storage.from(STORAGE_BUCKET).upload(path, blob, { contentType: 'image/jpeg' });
+      if (error) return null;
+      const { data: urlData } = sb.storage.from(STORAGE_BUCKET).getPublicUrl(path);
+      return urlData.publicUrl;
+    } catch (err){
+      console.warn('Auto cover generation failed —', err);
+      return null;
+    }
+  }
+
   // Shared single-file upload helper (used for cover images, main media
   // files, hero video/photo, resume — anywhere one file goes to one column).
   function setupSingleUpload(zoneId, inputId, progressId, onComplete){
@@ -720,7 +775,7 @@
 
       const { data: urlData } = sb.storage.from(STORAGE_BUCKET).getPublicUrl(path);
       progressBar.style.width = '100%';
-      onComplete(urlData.publicUrl);
+      onComplete(urlData.publicUrl, file);
       showToast('File uploaded — click Save to finish', 'success');
       setTimeout(function(){ progressWrap.classList.remove('visible'); progressBar.style.width='0%'; }, 600);
     }
@@ -1089,7 +1144,24 @@
       let pendingCoverUrl = item.cover_url || '';
       let pendingMediaUrl = item.media_url || '';
       setupSingleUpload('dz_ccover', 'f_ccoverfile', 'p_ccover', function(url){ pendingCoverUrl = url; });
-      setupSingleUpload('dz_cvideo', 'f_cvideofile', 'p_cvideo', function(url){ pendingMediaUrl = url; });
+      setupSingleUpload('dz_cvideo', 'f_cvideofile', 'p_cvideo', async function(url, file){
+        pendingMediaUrl = url;
+        if (!pendingCoverUrl){
+          showToast('Generating a cover thumbnail…', 'success');
+          const autoCoverUrl = await autoGenerateCover(file, true);
+          if (autoCoverUrl){
+            pendingCoverUrl = autoCoverUrl;
+            const coverZone = document.getElementById('dz_ccover');
+            let preview = coverZone.querySelector('.file-preview');
+            if (!preview){
+              preview = document.createElement('div');
+              preview.className = 'file-preview';
+              coverZone.appendChild(preview);
+            }
+            preview.textContent = 'Auto-generated from the uploaded video';
+          }
+        }
+      });
 
       document.getElementById('f_hasvideo').addEventListener('change', function(e){
         document.getElementById('cvideoWrap').style.display = e.target.checked ? 'block' : 'none';
@@ -1256,7 +1328,24 @@
       let pendingPosterUrl = item.cover_url || '';
 
       setupSingleUpload('dz_slideimg', 'f_slideimgfile', 'p_slideimg', function(url){ pendingMediaUrl = url; });
-      setupSingleUpload('dz_slidevideo', 'f_slidevideofile', 'p_slidevideo', function(url){ pendingVideoUrl = url; });
+      setupSingleUpload('dz_slidevideo', 'f_slidevideofile', 'p_slidevideo', async function(url, file){
+        pendingVideoUrl = url;
+        if (!pendingPosterUrl){
+          showToast('Generating a poster thumbnail…', 'success');
+          const autoPosterUrl = await autoGenerateCover(file, true);
+          if (autoPosterUrl){
+            pendingPosterUrl = autoPosterUrl;
+            const posterZone = document.getElementById('dz_slideposter');
+            let preview = posterZone.querySelector('.file-preview');
+            if (!preview){
+              preview = document.createElement('div');
+              preview.className = 'file-preview';
+              posterZone.appendChild(preview);
+            }
+            preview.textContent = 'Auto-generated from the uploaded video';
+          }
+        }
+      });
       setupSingleUpload('dz_slideposter', 'f_slideposterfile', 'p_slideposter', function(url){ pendingPosterUrl = url; });
 
       document.getElementById('f_mediatype').addEventListener('change', function(e){
@@ -1388,6 +1477,11 @@
       }).join('');
 
       formEl.innerHTML =
+        '<div class="toggle-row" style="border-color:var(--danger);">' +
+          '<div><div class="label-text">Maintenance mode</div><div class="label-sub">Shows a "back soon" page to every visitor — use this while making bigger edits</div></div>' +
+          '<label class="switch"><input type="checkbox" id="s_maintenance"' + (data.maintenance_mode ? ' checked' : '') + '><span class="slider"></span></label>' +
+        '</div>' +
+
         '<div class="toggle-row">' +
           '<div><div class="label-text">Contact form</div><div class="label-sub">Turn the public contact form on or off</div></div>' +
           '<label class="switch"><input type="checkbox" id="s_contact"' + (data.contact_form_enabled ? ' checked' : '') + '><span class="slider"></span></label>' +
@@ -1447,6 +1541,7 @@
 
       document.getElementById('s_save').addEventListener('click', async function(){
         const payload = {
+          maintenance_mode: document.getElementById('s_maintenance').checked,
           contact_form_enabled: document.getElementById('s_contact').checked,
           announcement_enabled: document.getElementById('s_announce').checked,
           announcement_message: document.getElementById('s_announceMsg').value.trim(),
@@ -1785,7 +1880,29 @@
       });
 
       // single file upload (video or single image)
-      setupSingleUpload('dz_main', 'f_mainfile', 'p_main', function(url){ pendingMediaUrl = url; });
+      setupSingleUpload('dz_main', 'f_mainfile', 'p_main', async function(url, file){
+        pendingMediaUrl = url;
+        // auto-generate a cover from the file itself if one hasn't been
+        // manually uploaded yet — a real video frame for videos, or the
+        // image file itself (reused directly) for images
+        if (!pendingCoverUrl){
+          const category = document.getElementById('f_category').value;
+          const isVideo = category === 'video';
+          showToast('Generating a cover thumbnail…', 'success');
+          const autoCoverUrl = isVideo ? await autoGenerateCover(file, true) : url;
+          if (autoCoverUrl){
+            pendingCoverUrl = autoCoverUrl;
+            const coverZone = document.getElementById('dz_cover');
+            let preview = coverZone.querySelector('.file-preview');
+            if (!preview){
+              preview = document.createElement('div');
+              preview.className = 'file-preview';
+              coverZone.appendChild(preview);
+            }
+            preview.textContent = 'Auto-generated from the uploaded ' + (isVideo ? 'video' : 'image');
+          }
+        }
+      });
 
       // cover/thumbnail image (always an image, regardless of category)
       setupSingleUpload('dz_cover', 'f_coverfile', 'p_cover', function(url){ pendingCoverUrl = url; });
