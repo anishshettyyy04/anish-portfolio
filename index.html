@@ -192,6 +192,26 @@
   .mobile-menu a:hover{background:var(--surface-2);color:var(--accent-2);}
   .mobile-menu a:last-child{border-bottom:none;margin-top:8px;color:var(--accent-2);}
 
+  /* ===== MAINTENANCE MODE OVERLAY ===== */
+  .maintenance-overlay{
+    position:fixed;inset:0;z-index:9999;
+    background:var(--bg);
+    display:flex;align-items:center;justify-content:center;
+    padding:24px;
+  }
+  .maintenance-content{text-align:center;max-width:440px;}
+  .maintenance-code{
+    font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--accent-2);
+    letter-spacing:0.06em;margin-bottom:18px;
+  }
+  .maintenance-title{
+    font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:48px;
+    background:linear-gradient(90deg,var(--accent),var(--accent-2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    margin-bottom:16px;line-height:1.1;
+  }
+  .maintenance-text{font-size:15px;color:var(--text-muted);line-height:1.7;}
+
   body{padding-top:0;}
   main{padding-top:81px;} /* offset for fixed nav height */
 
@@ -860,6 +880,17 @@
   </button>
 </div>
 
+<!-- MAINTENANCE MODE OVERLAY — hidden by default, shown only if the admin
+     toggle is on. Covers the entire page; the real site sits underneath
+     but is never visible while this is active. -->
+<div class="maintenance-overlay" id="maintenanceOverlay" style="display:none;">
+  <div class="maintenance-content">
+    <div class="maintenance-code">// working on it</div>
+    <h1 class="maintenance-title">Back soon</h1>
+    <p class="maintenance-text">This site is getting some updates right now. Check back shortly.</p>
+  </div>
+</div>
+
 <main>
 
 <!-- HERO -->
@@ -1094,6 +1125,15 @@
   const SUPABASE_URL = 'https://hjyexinxxdcywvinyaut.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhqeWV4aW54eGRjeXd2aW55YXV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MjY0ODgsImV4cCI6MjA5NzMwMjQ4OH0.U-VDiO1yugPoD6b3jm-C8rqdo5yC7GsPv4gJ5rDcnDE';
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // ===== MAINTENANCE MODE — checked first, before anything else loads =====
+  (async function checkMaintenanceMode(){
+    const { data, error } = await sb.from('site_settings').select('maintenance_mode').eq('id', 1).single();
+    if (!error && data && data.maintenance_mode){
+      document.getElementById('maintenanceOverlay').style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+  })();
 
   // ===== SKELETON LOADING STATES =====
   // Fills every data-driven section with a placeholder shape that matches
