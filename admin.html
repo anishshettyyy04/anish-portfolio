@@ -445,6 +445,13 @@
         <p style="font-size:13.5px;color:var(--text-muted);margin-bottom:20px;">Controls the order sections appear in on the public site, from Projects down to Contact. Use the arrows to move a section up or down.</p>
         <div id="sectionOrderList"></div>
       </div>
+
+      <div style="margin-top:40px;padding-top:32px;border-top:1px solid var(--line);">
+        <h1 class="display" style="font-size:20px;margin-bottom:6px;">Storage Cleanup</h1>
+        <p style="font-size:13.5px;color:var(--text-muted);margin-bottom:20px;">Finds files sitting in storage that no longer belong to anything on the site — usually left behind from before this safeguard existed, or from items deleted in an older version of this panel. Scanning is read-only; nothing is deleted until you confirm.</p>
+        <button class="btn btn-secondary btn-sm" id="scanStorageBtn" style="margin-bottom:16px;">Scan for unused files</button>
+        <div id="storageCleanupResult"></div>
+      </div>
     </div>
 
   </div>
@@ -536,6 +543,7 @@
     initSettingsPanel();
     initSocialLinksPanel();
     initSectionOrderPanel();
+    initStorageCleanupPanel();
   }
 
   // ===== PROJECTS PANEL =====
@@ -568,14 +576,18 @@
         });
       });
       listEl.querySelectorAll('[data-delete]').forEach(function(b){
-        b.addEventListener('click', function(){ handleDelete(b.getAttribute('data-delete')); });
+        b.addEventListener('click', function(){
+          const item = data.find(function(p){ return p.id === b.getAttribute('data-delete'); });
+          handleDelete(item);
+        });
       });
     }
 
-    async function handleDelete(id){
+    async function handleDelete(item){
       if (!confirm('Delete this project? This can\'t be undone.')) return;
-      const { error } = await sb.from('projects').delete().eq('id', id);
+      const { error } = await sb.from('projects').delete().eq('id', item.id);
       if (error){ showToast('Delete failed: ' + error.message, 'error'); return; }
+      await deleteStorageFiles([item.cover_url]);
       showToast('Project deleted', 'success');
       load();
     }
@@ -713,6 +725,27 @@
       console.warn('Auto cover generation failed —', err);
       return null;
     }
+  }
+
+  // ===== STORAGE CLEANUP =====
+  // Deleting a database row alone leaves its uploaded file sitting in
+  // Supabase Storage forever — this is what was quietly filling up the
+  // storage/egress quota. These helpers turn a public file URL back into
+  // its storage path and actually remove it, used by every delete handler
+  // below that has an associated upload.
+  function storagePathFromUrl(url){
+    if (!url) return null;
+    const marker = '/object/public/' + STORAGE_BUCKET + '/';
+    const idx = url.indexOf(marker);
+    if (idx === -1) return null;
+    return decodeURIComponent(url.slice(idx + marker.length));
+  }
+
+  async function deleteStorageFiles(urls){
+    const paths = urls.filter(Boolean).map(storagePathFromUrl).filter(Boolean);
+    if (paths.length === 0) return;
+    const { error } = await sb.storage.from(STORAGE_BUCKET).remove(paths);
+    if (error) console.warn('Storage cleanup failed for', paths, '—', error.message);
   }
 
   // Shared single-file upload helper (used for cover images, main media
@@ -1092,8 +1125,11 @@
       listEl.querySelectorAll('[data-delete]').forEach(function(b){
         b.addEventListener('click', async function(){
           if (!confirm('Delete this card?')) return;
-          const { error } = await sb.from('custom_section_items').delete().eq('id', b.getAttribute('data-delete'));
+          const id = b.getAttribute('data-delete');
+          const item = data.find(function(c){ return c.id === id; });
+          const { error } = await sb.from('custom_section_items').delete().eq('id', id);
           if (error){ showToast('Delete failed: ' + error.message, 'error'); return; }
+          if (item) await deleteStorageFiles([item.cover_url, item.media_url]);
           showToast('Card deleted', 'success');
           load();
         });
@@ -1252,8 +1288,11 @@
       listEl.querySelectorAll('[data-delete]').forEach(function(b){
         b.addEventListener('click', async function(){
           if (!confirm('Delete this slide?')) return;
-          const { error } = await sb.from('slides_items').delete().eq('id', b.getAttribute('data-delete'));
+          const id = b.getAttribute('data-delete');
+          const item = data.find(function(s){ return s.id === id; });
+          const { error } = await sb.from('slides_items').delete().eq('id', id);
           if (error){ showToast('Delete failed: ' + error.message, 'error'); return; }
+          if (item) await deleteStorageFiles([item.media_url, item.cover_url]);
           showToast('Slide deleted', 'success');
           load();
         });
@@ -1750,6 +1789,107 @@
     load();
   }
 
+  // ===== STORAGE CLEANUP =====
+  // Lists every file actually sitting in the storage bucket, compares it
+  // against every URL referenced across every table, and surfaces anything
+  // orphaned — a file with no database row pointing to it anymore. This is
+  // what catches files left behind from before per-item delete cleanup
+  // existed, or from any other edge case that slips through.
+  function initStorageCleanupPanel(){
+    const scanBtn = document.getElementById('scanStorageBtn');
+    const resultEl = document.getElementById('storageCleanupResult');
+
+    // Recursively lists every file under a folder in the bucket — Supabase's
+    // list() only goes one level deep per call, so subfolders (media/,
+    // media/pages/, settings/, etc.) need to be walked manually.
+    async function listAllFiles(prefix){
+      const { data, error } = await sb.storage.from(STORAGE_BUCKET).list(prefix, { limit: 1000 });
+      if (error || !data) return [];
+      let files = [];
+      for (const entry of data){
+        const fullPath = prefix ? prefix + '/' + entry.name : entry.name;
+        if (entry.metadata){
+          // has file metadata (size, mimetype, etc.) — it's an actual file
+          files.push({ path: fullPath, size: entry.metadata.size || 0 });
+        } else {
+          // no metadata — Supabase represents folders as entries without it
+          const nested = await listAllFiles(fullPath);
+          files = files.concat(nested);
+        }
+      }
+      return files;
+    }
+
+    async function gatherAllReferencedUrls(){
+      const urls = new Set();
+      const tables = [
+        { name: 'projects', fields: ['cover_url'] },
+        { name: 'media_items', fields: ['media_url', 'cover_url', 'page_urls'] },
+        { name: 'custom_section_items', fields: ['cover_url', 'media_url'] },
+        { name: 'slides_items', fields: ['media_url', 'cover_url'] },
+        { name: 'site_settings', fields: ['hero_video_url', 'hero_still_url', 'resume_url'] }
+      ];
+      for (const t of tables){
+        const { data } = await sb.from(t.name).select(t.fields.join(','));
+        if (!data) continue;
+        data.forEach(function(row){
+          t.fields.forEach(function(f){
+            const v = row[f];
+            if (!v) return;
+            if (Array.isArray(v)) v.forEach(function(u){ if (u) urls.add(u); });
+            else urls.add(v);
+          });
+        });
+      }
+      return urls;
+    }
+
+    scanBtn.addEventListener('click', async function(){
+      scanBtn.disabled = true;
+      scanBtn.textContent = 'Scanning…';
+      resultEl.innerHTML = '';
+
+      const [allFiles, referencedUrls] = await Promise.all([
+        listAllFiles(''),
+        gatherAllReferencedUrls()
+      ]);
+
+      const orphans = allFiles.filter(function(f){
+        const url = sb.storage.from(STORAGE_BUCKET).getPublicUrl(f.path).data.publicUrl;
+        return !referencedUrls.has(url);
+      });
+
+      scanBtn.disabled = false;
+      scanBtn.textContent = 'Scan for unused files';
+
+      if (orphans.length === 0){
+        resultEl.innerHTML = '<div class="empty-state">No unused files found — storage is clean.</div>';
+        return;
+      }
+
+      const totalBytes = orphans.reduce(function(sum, f){ return sum + (f.size || 0); }, 0);
+      const totalMB = (totalBytes / (1024*1024)).toFixed(1);
+
+      resultEl.innerHTML =
+        '<div class="empty-state" style="text-align:left;">' +
+          '<div style="color:var(--text);margin-bottom:10px;">Found ' + orphans.length + ' unused file(s), totaling about ' + totalMB + 'MB:</div>' +
+          '<div style="max-height:240px;overflow-y:auto;margin-bottom:14px;font-family:\'JetBrains Mono\',monospace;font-size:11.5px;">' +
+            orphans.map(function(f){ return '<div style="padding:4px 0;border-top:1px solid var(--line);">' + f.path + '</div>'; }).join('') +
+          '</div>' +
+          '<button class="btn btn-danger btn-sm" id="confirmDeleteOrphansBtn">Delete all ' + orphans.length + ' unused file(s)</button>' +
+        '</div>';
+
+      document.getElementById('confirmDeleteOrphansBtn').addEventListener('click', async function(){
+        if (!confirm('Permanently delete ' + orphans.length + ' unused file(s) from storage? This cannot be undone.')) return;
+        const paths = orphans.map(function(f){ return f.path; });
+        const { error } = await sb.storage.from(STORAGE_BUCKET).remove(paths);
+        if (error){ showToast('Delete failed: ' + error.message, 'error'); return; }
+        showToast('Deleted ' + orphans.length + ' unused file(s)', 'success');
+        resultEl.innerHTML = '<div class="empty-state">Cleaned up — run the scan again any time to check for more.</div>';
+      });
+    });
+  }
+
   // ===== MEDIA PANEL =====
   function initMediaPanel(){
     const listEl = document.getElementById('mediaList');
@@ -1781,8 +1921,14 @@
       listEl.querySelectorAll('[data-delete]').forEach(function(b){
         b.addEventListener('click', async function(){
           if (!confirm('Delete this media item?')) return;
-          const { error } = await sb.from('media_items').delete().eq('id', b.getAttribute('data-delete'));
+          const id = b.getAttribute('data-delete');
+          const item = data.find(function(m){ return m.id === id; });
+          const { error } = await sb.from('media_items').delete().eq('id', id);
           if (error){ showToast('Delete failed: ' + error.message, 'error'); return; }
+          if (item){
+            const urls = [item.media_url, item.cover_url].concat(item.page_urls || []);
+            await deleteStorageFiles(urls);
+          }
           showToast('Media deleted', 'success');
           load();
         });
